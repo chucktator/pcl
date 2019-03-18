@@ -425,7 +425,7 @@ namespace pcl
 
   PCL_EXPORTS std::ostream& operator << (std::ostream& os, const Intensity32u& p);
   /** \brief A point structure representing the grayscale intensity in single-channel images.
-    * Intensity is represented as a uint8_t value.
+    * Intensity is represented as a uint32_t value.
     * \ingroup common
     */
   struct Intensity32u: public _Intensity32u
@@ -662,7 +662,7 @@ namespace pcl
       data[3] = 1.0f;
       r = g = b = 0;
       a = 255;
-      label = 255;
+      label = 0;
     }
     inline PointXYZRGBL (uint8_t _r, uint8_t _g, uint8_t _b, uint32_t _label)
     {
@@ -882,6 +882,7 @@ namespace pcl
       x = y = z = 0.0f;
       data[3] = 1.0f;
       normal_x = normal_y = normal_z = data_n[3] = 0.0f;
+      curvature = 0.f;
     }
   
     friend std::ostream& operator << (std::ostream& os, const PointNormal& p);

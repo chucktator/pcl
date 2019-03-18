@@ -35,12 +35,11 @@
  *
  */
 
-#ifndef PCL_FILTERS_SAMPLING_SURFACE_NORMAL_H_
-#define PCL_FILTERS_SAMPLING_SURFACE_NORMAL_H_
+#pragma once
 
 #include <pcl/filters/filter.h>
-#include <time.h>
-#include <limits.h>
+#include <ctime>
+#include <climits>
 
 namespace pcl
 {
@@ -63,7 +62,7 @@ namespace pcl
     typedef typename PointCloud::Ptr PointCloudPtr;
     typedef typename PointCloud::ConstPtr PointCloudConstPtr;
 
-    typedef typename Eigen::Matrix<float, Eigen::Dynamic, 1> Vector;
+    typedef Eigen::Matrix<float, Eigen::Dynamic, 1> Vector;
 
     public:
 
@@ -140,11 +139,11 @@ namespace pcl
         * \param[out] output the resultant point cloud
         */
       void
-      applyFilter (PointCloud &output);
+      applyFilter (PointCloud &output) override;
 
     private:
 
-      /** \brief @b CompareDim is a comparator object for sorting across a specific dimenstion (i,.e X, Y or Z)
+      /** \brief @b CompareDim is a comparator object for sorting across a specific dimension (i,.e X, Y or Z)
        */
       struct CompareDim
       {
@@ -249,5 +248,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/filters/impl/sampling_surface_normal.hpp>
 #endif
-
-#endif  //#ifndef PCL_FILTERS_SAMPLING_SURFACE_NORMAL_H_

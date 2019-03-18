@@ -35,12 +35,11 @@
  *
  */
 
-#ifndef PCL_RECOGNITION_LINEMOD
-#define PCL_RECOGNITION_LINEMOD
+#pragma once
 
 #include <vector>
 #include <cstddef>
-#include <string.h>
+#include <cstring>
 #include <pcl/pcl_macros.h>
 #include <pcl/recognition/quantizable_modality.h>
 #include <pcl/recognition/region_xy.h>
@@ -101,11 +100,11 @@ namespace pcl
 
         const size_t mapsSize = width*height;
 
-        for (size_t map_index = 0; map_index < maps_.size (); ++map_index)
+        for (auto &map : maps_)
         {
           //maps_[map_index] = new unsigned char[mapsSize];
-          maps_[map_index] = reinterpret_cast<unsigned char*> (aligned_malloc (mapsSize));
-          memset (maps_[map_index], 0, mapsSize);
+          map = reinterpret_cast<unsigned char*> (aligned_malloc (mapsSize));
+          memset (map, 0, mapsSize);
         }
       }
 
@@ -113,9 +112,9 @@ namespace pcl
       void 
       releaseAll ()
       {
-        for (size_t map_index = 0; map_index < maps_.size (); ++map_index)
+        for (auto &map : maps_)
           //if (maps_[map_index] != NULL) delete[] maps_[map_index];
-          if (maps_[map_index] != NULL) aligned_free (maps_[map_index]);
+          if (map != NULL) aligned_free (map);
 
         maps_.clear ();
         width_ = 0;
@@ -243,11 +242,11 @@ namespace pcl
 
         const size_t mapsSize = mem_width_ * mem_height_;
 
-        for (size_t map_index = 0; map_index < maps_.size (); ++map_index)
+        for (auto &map : maps_)
         {
           //maps_[map_index] = new unsigned char[2*mapsSize];
-          maps_[map_index] = reinterpret_cast<unsigned char*> (aligned_malloc (2*mapsSize));
-          memset (maps_[map_index], 0, 2*mapsSize);
+          map = reinterpret_cast<unsigned char*> (aligned_malloc (2*mapsSize));
+          memset (map, 0, 2*mapsSize);
         }
       }
 
@@ -255,9 +254,9 @@ namespace pcl
       void 
       releaseAll ()
       {
-        for (size_t map_index = 0; map_index < maps_.size (); ++map_index)
+        for (auto &map : maps_)
           //if (maps_[map_index] != NULL) delete[] maps_[map_index];
-          if (maps_[map_index] != NULL) aligned_free (maps_[map_index]);
+          if (map != NULL) aligned_free (map);
 
         maps_.clear ();
         width_ = 0;
@@ -475,5 +474,3 @@ namespace pcl
   };
 
 }
-
-#endif 

@@ -39,8 +39,7 @@
  * @brief This file contains the function prototypes for the tree building functions.
  */
  
-#ifndef PCL_GPU_PEOPLE_LABEL_TREE_H_
-#define PCL_GPU_PEOPLE_LABEL_TREE_H_
+#pragma once
  
 // our headers
 #include "pcl/gpu/people/label_blob2.h"   //this one defines the blob structure
@@ -77,8 +76,8 @@ namespace pcl
         //Inline constructor
         Tree2() : id(NO_CHILD), lid(NO_CHILD), nr_parts(0)
         {
-          for(int i=0;i<NUM_PARTS;i++)
-            parts_lid[i] = NO_CHILD;
+          for(int &part : parts_lid)
+            part = NO_CHILD;
         }
        
         int     id;                     // specific identification number of this tree
@@ -125,10 +124,10 @@ namespace pcl
       {
         if(sorted[label].size() == 0)
           return 0;
-        for(size_t i = 0; i < sorted[label].size(); i++)
+        for(auto &blob : sorted[label])
         {
           for(int j = 0; j < MAX_CHILD; j++)
-            sorted[label][i].child_id[j] = LEAF;
+            blob.child_id[j] = LEAF;
         }
         return 0;
       }
@@ -147,8 +146,8 @@ namespace pcl
       {
         if(sorted[label].size() == 0)
           return 0;
-        for(size_t i = 0; i < sorted[label].size(); i++){
-          sorted[label][i].child_id[child_number] = NO_CHILD;
+        for(auto &blob : sorted[label]){
+          blob.child_id[child_number] = NO_CHILD;
         }
         return 0;
       }
@@ -163,11 +162,11 @@ namespace pcl
                                   int                               child_number)
       {
         if(sorted[label].size() == 0)
-          return 0;
-        for(size_t i = 0; i < sorted[label].size(); i++)
-          if((sorted[label][i].child_id[child_number] != NO_CHILD) && (sorted[label][i].child_id[child_number] != LEAF))
-            return 1;
-        return 0;
+          return false;
+        for(const auto &blob : sorted[label])
+          if((blob.child_id[child_number] != NO_CHILD) && (blob.child_id[child_number] != LEAF))
+            return true;
+        return false;
       }
 
       /**
@@ -667,4 +666,3 @@ namespace pcl
     } //end namespace people
   } // end namespace gpu
 } // end namespace pcl
-#endif

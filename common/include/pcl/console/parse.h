@@ -35,8 +35,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef PCL_CONSOLE_PARSE_H_
-#define PCL_CONSOLE_PARSE_H_
+
+#pragma once
 
 #include <vector>
 #include <sstream>
@@ -348,6 +348,16 @@ namespace pcl
                                  std::vector<double> &values_s, 
                                  std::vector<double> &values_t);
 
+    /** \brief Parse command line arguments for file names with given extension vector
+      * \param[in] argc the number of command line arguments
+      * \param[in] argv the command line arguments
+      * \param[in] extensions the extensions to search for
+      * \return a vector with file names indices
+      */
+    PCL_EXPORTS std::vector<int>
+    parse_file_extension_argument (int argc, const char * const * argv,
+      const std::vector<std::string> &extensions);
+
     /** \brief Parse command line arguments for file names with given extension
       * \param[in] argc the number of command line arguments
       * \param[in] argv the command line arguments
@@ -358,6 +368,3 @@ namespace pcl
     parse_file_extension_argument (int argc, const char * const * argv, const std::string &ext);
   }
 }
-
-#endif      // PCL_CONSOLE_PARSE_H_
-

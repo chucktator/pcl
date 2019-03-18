@@ -74,7 +74,7 @@ namespace pcl
     OutofcoreOctreeDiskContainer<PointT>::rand_gen_ (static_cast<unsigned int> (std::time(NULL)));
 
     template<typename PointT>
-    boost::uuids::random_generator OutofcoreOctreeDiskContainer<PointT>::uuid_gen_ (&rand_gen_);
+    boost::uuids::basic_random_generator<boost::mt19937> OutofcoreOctreeDiskContainer<PointT>::uuid_gen_ (&rand_gen_);
 
     template<typename PointT>
     const uint64_t OutofcoreOctreeDiskContainer<PointT>::READ_BLOCK_SIZE_ = static_cast<uint64_t> (2e12);
@@ -205,7 +205,7 @@ namespace pcl
 
         PointT temp;
         //open our file
-        FILE* f = fopen (disk_storage_filename_->c_str (), "rb");
+        FILE* f = fopen (disk_storage_filename_->c_str (), "rbe");
         assert (f != NULL);
 
         //seek the right length; 
@@ -331,7 +331,7 @@ namespace pcl
         }
         std::sort (offsets.begin (), offsets.end ());
 
-        FILE* f = fopen (disk_storage_filename_->c_str (), "rb");
+        FILE* f = fopen (disk_storage_filename_->c_str (), "rbe");
         assert (f != NULL);
         PointT p;
         char* loc = reinterpret_cast<char*> (&p);
@@ -430,7 +430,7 @@ namespace pcl
         }
         std::sort (offsets.begin (), offsets.end ());
 
-        FILE* f = fopen (disk_storage_filename_->c_str (), "rb");
+        FILE* f = fopen (disk_storage_filename_->c_str (), "rbe");
         assert (f != NULL);
         PointT p;
         char* loc = reinterpret_cast<char*> (&p);

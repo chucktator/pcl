@@ -63,7 +63,6 @@
 
 #include <pcl/console/print.h>
 #include <pcl/console/parse.h>
-#include <pcl/console/time.h>
 
 // RangeImage:
 #include <pcl/range_image/range_image_planar.h>
@@ -281,12 +280,12 @@ void display_depth_image(const float* depth_buffer)
 }
 */
 
-boost::shared_ptr<pcl::visualization::PCLVisualizer> simpleVis (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud)
+pcl::visualization::PCLVisualizer::Ptr simpleVis (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud)
 {
   // --------------------------------------------
   // -----Open 3D viewer and add point cloud-----
   // --------------------------------------------
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+  pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
   viewer->setBackgroundColor (0, 0, 0);
   pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
   viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "sample cloud");
@@ -325,9 +324,9 @@ void display ()
   
   range_likelihood_->computeLikelihoods (reference, poses, scores);
   std::cout << "score: ";
-  for (size_t i = 0; i<scores.size (); ++i)
+  for (const float &score : scores)
   {
-    std::cout << " " << scores[i];
+    std::cout << " " << score;
   }
   std::cout << std::endl;
 
@@ -408,7 +407,7 @@ void display ()
 //     viewer.showCloud (pc_out);
 
 
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+  pcl::visualization::PCLVisualizer::Ptr viewer;
   viewer = simpleVis(pc_out);
   while (!viewer->wasStopped ())
   {
@@ -442,7 +441,7 @@ void display ()
 //     //t.tv_nsec = (time_t)(20000000); // short sleep
 //     t.tv_nsec = (time_t)(0);  // long sleep - normal speed
 //     nanosleep (&t, NULL);
-    write_file_ = 0;
+    write_file_ = false;
   }
 }
 
@@ -469,7 +468,7 @@ on_keyboard (unsigned char key, int, int)
   else if (key == 'p' || key == 'P')
     paused_ = !paused_;
   else if (key == 'v' || key == 'V')
-    write_file_ = 1;
+    write_file_ = true;
   
   // Use glutGetModifiers for modifiers
   // GLUT_ACTIVE_SHIFT, GLUT_ACTIVE_CTRL, GLUT_ACTIVE_ALT
@@ -593,8 +592,7 @@ main (int argc, char** argv)
     return (-1);
   }  
   
-  int i;
-  for (i=0; i<2048; i++)
+  for (int i=0; i < 2048; i++)
   {
     float v = i/2048.0;
     v = powf(v, 3)* 6;

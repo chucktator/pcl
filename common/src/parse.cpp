@@ -36,8 +36,8 @@
  *
  */
 
-#include <ctype.h>
-#include <stdio.h>
+#include <cctype>
+#include <cstdio>
 #include <pcl/console/parse.h>
 #include <pcl/console/print.h>
 #include <boost/algorithm/string.hpp>
@@ -149,32 +149,47 @@ pcl::console::parse_argument (int argc, const char * const * argv, const char * 
 
 ////////////////////////////////////////////////////////////////////////////////
 std::vector<int>
-pcl::console::parse_file_extension_argument (int argc, const char * const * argv, const std::string &extension)
+pcl::console::parse_file_extension_argument (int argc, const char * const * argv,
+  const std::vector<std::string> &extension)
 {
   std::vector<int> indices;
   for (int i = 1; i < argc; ++i)
   {
     std::string fname = std::string (argv[i]);
-    std::string ext = extension;
-
-    // Needs to be at least 4: .ext
-    if (fname.size () <= 4)
-      continue;
-
-    // For being case insensitive
-    std::transform (fname.begin (), fname.end (), fname.begin (), tolower);
-    std::transform (ext.begin (), ext.end (), ext.begin (), tolower);
-
-    // Check if found
-    std::string::size_type it;
-    if ((it = fname.rfind (ext)) != std::string::npos)
+    for (auto ext : extension)
     {
-      // Additional check: we want to be able to differentiate between .p and .png
-      if ((ext.size () - (fname.size () - it)) == 0)
-        indices.push_back (i);
+      // Needs to be at least 4: .ext
+      if (fname.size () <= 4)
+        continue;
+
+      // For being case insensitive
+      std::transform (fname.begin (), fname.end (), fname.begin (), tolower);
+      std::transform (ext.begin (), ext.end (), ext.begin (), tolower);
+
+      // Check if found
+      std::string::size_type it;
+      if ((it = fname.rfind (ext)) != std::string::npos)
+      {
+        // Additional check: we want to be able to differentiate between .p and .png
+        if ((ext.size () - (fname.size () - it)) == 0)
+        {
+          indices.push_back (i);
+          break;
+        }
+      }
     }
   }
   return (indices);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+std::vector<int>
+pcl::console::parse_file_extension_argument (int argc, const char * const * argv,
+  const std::string &ext)
+{
+  std::vector<std::string> extensions;
+  extensions.push_back (ext);
+  return parse_file_extension_argument (argc, argv, extensions);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -465,7 +480,7 @@ pcl::console::parse_multiple_arguments (int argc, const char * const * argv, con
     // Search for the string
     if ((strcmp (argv[i], str) == 0) && (++i < argc))
     {
-      values.push_back (std::string (argv[i]));
+      values.emplace_back(argv[i]);
     }
   }
   if (values.size () == 0)

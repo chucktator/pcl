@@ -37,7 +37,7 @@
 #include <ui_pcd_video_player.h>
 
 #include <iostream>
-#include <time.h>
+#include <ctime>
 
 // QT4
 #include <QMainWindow>
@@ -104,7 +104,7 @@ class PCDVideoPlayer : public QMainWindow
     ~PCDVideoPlayer () {}
 
   protected:
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> vis_;
+    pcl::visualization::PCLVisualizer::Ptr vis_;
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_;
 
     QMutex mtx_;

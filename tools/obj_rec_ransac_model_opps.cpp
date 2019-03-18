@@ -171,7 +171,6 @@ void showModelOpps (PCLVisualizer& viz, const ModelLibrary::HashTable& hash_tabl
   printf ("Visualizing ... "); fflush (stdout);
 
   const ModelLibrary::HashTableCell* cells = hash_table.getVoxels ();
-  int i, num_cells = hash_table.getNumberOfVoxels ();
 
   // The opps points and lines
   vtkSmartPointer<vtkPolyData> vtk_opps = vtkSmartPointer<vtkPolyData>::New ();
@@ -185,7 +184,8 @@ void showModelOpps (PCLVisualizer& viz, const ModelLibrary::HashTable& hash_tabl
   vtkIdType ids[2] = {0, 1};
 
   // Check cell by cell
-  for ( i = 0 ; i < num_cells ; ++i )
+  const int num_cells = hash_table.getNumberOfVoxels ();
+  for (int i = 0 ; i < num_cells ; ++i )
   {
     // Make sure that we get only point pairs belonging to 'model'
 	ModelLibrary::HashTableCell::const_iterator res = cells[i].find (model);
@@ -195,16 +195,16 @@ void showModelOpps (PCLVisualizer& viz, const ModelLibrary::HashTable& hash_tabl
     // Get the opps in the current cell
     const ModelLibrary::node_data_pair_list& data_pairs = res->second;
 
-    for ( ModelLibrary::node_data_pair_list::const_iterator dp = data_pairs.begin () ; dp != data_pairs.end () ; ++dp )
+    for (const auto &data_pair : data_pairs)
     {
-      vtk_opps_points->InsertNextPoint (dp->first->getPoint ());
-      vtk_opps_points->InsertNextPoint (dp->second->getPoint ());
+      vtk_opps_points->InsertNextPoint (data_pair.first->getPoint ());
+      vtk_opps_points->InsertNextPoint (data_pair.second->getPoint ());
       vtk_opps_lines->InsertNextCell (2, ids);
       ids[0] += 2;
       ids[1] += 2;
 #ifndef _SHOW_MODEL_OCTREE_NORMALS_
-      vtk_normals->InsertNextTuple3 (dp->first->getNormal  ()[0], dp->first->getNormal  ()[1], dp->first->getNormal  ()[2]);
-      vtk_normals->InsertNextTuple3 (dp->second->getNormal ()[0], dp->second->getNormal ()[1], dp->second->getNormal ()[2]);
+      vtk_normals->InsertNextTuple3 (data_pair.first->getNormal  ()[0], data_pair.first->getNormal  ()[1], data_pair.first->getNormal  ()[2]);
+      vtk_normals->InsertNextTuple3 (data_pair.second->getNormal ()[0], data_pair.second->getNormal ()[1], data_pair.second->getNormal ()[2]);
 #endif
     }
   }
@@ -216,11 +216,7 @@ void showModelOpps (PCLVisualizer& viz, const ModelLibrary::HashTable& hash_tabl
   // Save the normals
   vtk_opps->GetPointData ()->SetNormals (vtk_normals);
   // Setup the hedge hog object
-#if VTK_MAJOR_VERSION < 6
-  vtk_hedge_hog->SetInput (vtk_opps);
-#else
   vtk_hedge_hog->SetInputData (vtk_opps);
-#endif
   vtk_hedge_hog->SetVectorModeToUseNormal ();
   vtk_hedge_hog->SetScaleFactor (0.5f*pair_width);
   vtk_hedge_hog->Update ();

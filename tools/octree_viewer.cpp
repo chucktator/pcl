@@ -308,22 +308,18 @@ private:
 
     // Create every cubes to be displayed
     double s = voxelSideLen / 2.0;
-    for (size_t i = 0; i < cloudVoxel->points.size (); i++)
+    for (const auto &point : cloudVoxel->points)
     {
-      double x = cloudVoxel->points[i].x;
-      double y = cloudVoxel->points[i].y;
-      double z = cloudVoxel->points[i].z;
+      double x = point.x;
+      double y = point.y;
+      double z = point.z;
 
       vtkSmartPointer<vtkCubeSource> wk_cubeSource = vtkSmartPointer<vtkCubeSource>::New ();
 
       wk_cubeSource->SetBounds (x - s, x + s, y - s, y + s, z - s, z + s);
       wk_cubeSource->Update ();
 
-#if VTK_MAJOR_VERSION < 6
-      appendFilter->AddInput (wk_cubeSource->GetOutput ());
-#else
       appendFilter->AddInputData (wk_cubeSource->GetOutput ());
-#endif
     }
 
     // Remove any duplicate points
@@ -406,9 +402,9 @@ private:
 
         // Iterate over the leafs to compute the centroid of all of them
         pcl::CentroidPoint<pcl::PointXYZ> centroid;
-        for (size_t j = 0; j < voxelCentroids.size (); ++j)
+        for (const auto &voxelCentroid : voxelCentroids)
         {
-          centroid.add (voxelCentroids[j]);
+          centroid.add (voxelCentroid);
         }
         centroid.get (pt_centroid);
       }

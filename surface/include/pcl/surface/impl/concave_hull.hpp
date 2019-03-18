@@ -51,8 +51,8 @@
 #include <pcl/common/transforms.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/common/io.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <pcl/surface/qhull.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
   // Check if the covariance matrix is finite or not.
   for (int i = 0; i < 3; ++i)
     for (int j = 0; j < 3; ++j)
-      if (!pcl_isfinite (covariance_matrix.coeffRef (i, j)))
+      if (!std::isfinite (covariance_matrix.coeffRef (i, j)))
           return;
 
   EIGEN_ALIGN16 Eigen::Vector3d eigen_values;
@@ -208,9 +208,9 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
       bool NaNvalues = false;
       for (size_t i = 0; i < cloud_transformed.size (); ++i)
       {
-        if (!pcl_isfinite (cloud_transformed.points[i].x) ||
-            !pcl_isfinite (cloud_transformed.points[i].y) ||
-            !pcl_isfinite (cloud_transformed.points[i].z))
+        if (!std::isfinite (cloud_transformed.points[i].x) ||
+            !std::isfinite (cloud_transformed.points[i].y) ||
+            !std::isfinite (cloud_transformed.points[i].z))
         {
           NaNvalues = true;
           break;
@@ -242,7 +242,7 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
   int max_vertex_id = 0;
   FORALLvertices
   {
-    if (vertex->id + 1 > max_vertex_id)
+    if (vertex->id + 1 > unsigned (max_vertex_id))
       max_vertex_id = vertex->id + 1;
   }
 
@@ -487,12 +487,12 @@ pcl::ConcaveHull<PointInT>::performReconstruction (PointCloud &alpha_shape, std:
     {
       alpha_shape_sorted.points[sorted_idx] = alpha_shape.points[(*curr).first];
       // check where we can go from (*curr).first
-      for (size_t i = 0; i < (*curr).second.size (); i++)
+      for (const int &i : (*curr).second)
       {
-        if (!used[((*curr).second)[i]])
+        if (!used[i])
         {
           // we can go there
-          next = ((*curr).second)[i];
+          next = i;
           break;
         }
       }

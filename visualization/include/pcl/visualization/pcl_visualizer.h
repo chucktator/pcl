@@ -35,8 +35,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef PCL_PCL_VISUALIZER_H_
-#define PCL_PCL_VISUALIZER_H_
+
+#pragma once
 
 // PCL includes
 #include <pcl/correspondence.h>
@@ -1882,11 +1882,9 @@ namespace pcl
         void
         saveCameraParameters (const std::string &file);
 
-        /** \brief Get camera parameters and save them to a pcl::visualization::Camera.
-          * \param[out] camera the name of the pcl::visualization::Camera
-          */
+        /** \brief Get camera parameters of a given viewport (0 means default viewport). */
         void
-        getCameraParameters (Camera &camera);
+        getCameraParameters (Camera &camera, int viewport = 0) const;
 
         /** \brief Return a pointer to the underlying VTK Render Window used. */
         vtkSmartPointer<vtkRenderWindow>
@@ -1976,11 +1974,7 @@ namespace pcl
         }
       protected:
         /** \brief The render window interactor. */
-#if ((VTK_MAJOR_VERSION == 5) && (VTK_MINOR_VERSION <= 4))
-        vtkSmartPointer<PCLVisualizerInteractor> interactor_;
-#else
         vtkSmartPointer<vtkRenderWindowInteractor> interactor_;
-#endif
       private:
         /** \brief Internal function for renderer setup
          * \param[in] vtk renderer
@@ -2005,11 +1999,13 @@ namespace pcl
          */
         void setDefaultWindowSizeAndPos ();
 
-        /** \brief Internal function for setting up camera parameters
-         * \param[in] argc
-         * \param[in] argv
+        /** \brief Set up camera parameters.
+         *
+         * Parses command line arguments to find camera parameters (either explicit numbers or a path to a .cam file).
+         * If not found, will generate a unique .cam file path (based on the rest of command line arguments) and try
+         * to load that. If it is also not found, just set the defaults.
          */
-        void setupCamera (int &argc, char **argv);
+        void setupCamera (int argc, char **argv);
 
         struct PCL_EXPORTS ExitMainLoopTimerCallback : public vtkCommand
         {
@@ -2017,8 +2013,8 @@ namespace pcl
           {
             return (new ExitMainLoopTimerCallback);
           }
-          virtual void 
-          Execute (vtkObject*, unsigned long event_id, void*);
+          void 
+          Execute (vtkObject*, unsigned long event_id, void*) override;
 
           int right_timer_id;
           PCLVisualizer* pcl_visualizer;
@@ -2030,8 +2026,8 @@ namespace pcl
           {
             return (new ExitCallback);
           }
-          virtual void 
-          Execute (vtkObject*, unsigned long event_id, void*);
+          void 
+          Execute (vtkObject*, unsigned long event_id, void*) override;
 
           PCLVisualizer* pcl_visualizer;
         };
@@ -2045,8 +2041,8 @@ namespace pcl
           FPSCallback (const FPSCallback& src) : vtkCommand (), actor (src.actor), pcl_visualizer (src.pcl_visualizer), decimated (src.decimated), last_fps (src.last_fps) {}
           FPSCallback& operator = (const FPSCallback& src) { actor = src.actor; pcl_visualizer = src.pcl_visualizer; decimated = src.decimated; last_fps = src.last_fps; return (*this); }
 
-          virtual void 
-          Execute (vtkObject*, unsigned long event_id, void*);
+          void 
+          Execute (vtkObject*, unsigned long event_id, void*) override;
 
           vtkTextActor *actor;
           PCLVisualizer* pcl_visualizer;
@@ -2057,13 +2053,12 @@ namespace pcl
         /** \brief The FPSCallback object for the current visualizer. */
         vtkSmartPointer<FPSCallback> update_fps_;
 
-#if !((VTK_MAJOR_VERSION == 5) && (VTK_MINOR_VERSION <= 4))
         /** \brief Set to false if the interaction loop is running. */
         bool stopped_;
 
         /** \brief Global timer ID. Used in destructor only. */
         int timer_id_;
-#endif
+
         /** \brief Callback object enabling us to leave the main loop, when a timer fires. */
         vtkSmartPointer<ExitMainLoopTimerCallback> exit_main_loop_timer_callback_;
         vtkSmartPointer<ExitCallback> exit_callback_;
@@ -2350,6 +2345,3 @@ namespace pcl
 }
 
 #include <pcl/visualization/impl/pcl_visualizer.hpp>
-
-#endif
-

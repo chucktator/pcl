@@ -58,7 +58,7 @@ init ()
   for (float z = -0.5f; z <= 0.5f; z += resolution)
     for (float y = -0.5f; y <= 0.5f; y += resolution)
       for (float x = -0.5f; x <= 0.5f; x += resolution)
-        cloud.points.push_back (PointXYZ (x, y, z));
+        cloud.points.emplace_back(x, y, z);
   cloud.width = int (cloud.points.size ());
   cloud.height = 1;
 
@@ -67,11 +67,10 @@ init ()
   srand (int (time (NULL)));
   // Randomly create a new point cloud
   for (size_t i = 0; i < cloud_big.width * cloud_big.height; ++i)
-    cloud_big.points.push_back (
-                                PointXYZ (
+    cloud_big.points.emplace_back(
                                   float (1024 * rand () / (RAND_MAX + 1.0)),
                                   float (1024 * rand () / (RAND_MAX + 1.0)),
-                                  float (1024 * rand () / (RAND_MAX + 1.0))));
+                                  float (1024 * rand () / (RAND_MAX + 1.0)));
 }
 
 
@@ -108,9 +107,9 @@ TEST (PCL, FlannSearch_nearestKSearch)
   EXPECT_EQ (k_indices.size (), no_of_neighbors);
 
   // Check if all found neighbors have distance smaller than max_dist
-  for (size_t i = 0; i < k_indices.size (); ++i)
+  for (const int &k_index : k_indices)
   {
-    const PointXYZ& point = cloud.points[k_indices[i]];
+    const PointXYZ& point = cloud.points[k_index];
     bool ok = euclideanDistance (test_point, point) <= max_dist;
     if (!ok)
     ok = (fabs (euclideanDistance (test_point, point)) - max_dist) <= 1e-6;
@@ -124,8 +123,8 @@ TEST (PCL, FlannSearch_nearestKSearch)
     pcl::search::Search<PointXYZ>* FlannSearch = new pcl::search::FlannSearch<PointXYZ>( new search::FlannSearch<PointXYZ>::KdTreeIndexCreator);
     //FlannSearch->initSearchDS ();
     FlannSearch->setInputCloud (cloud_big.makeShared ());
-    for (size_t i = 0; i < cloud_big.points.size (); ++i)
-      FlannSearch->nearestKSearch (cloud_big.points[i], no_of_neighbors, k_indices, k_distances);
+    for (const auto &point : cloud_big.points)
+      FlannSearch->nearestKSearch (point, no_of_neighbors, k_indices, k_distances);
   }
 }
 
@@ -283,13 +282,13 @@ TEST (PCL, FlannSearch_compareToKdTreeFlann)
 
   {
     ScopeTime scopeTime ("FLANN nearestKSearch");
-    for (size_t i = 0; i < cloud_big.points.size (); ++i)
-      flann_search->nearestKSearch (cloud_big.points[i], no_of_neighbors, k_indices, k_distances);
+    for (const auto &point : cloud_big.points)
+      flann_search->nearestKSearch (point, no_of_neighbors, k_indices, k_distances);
   }
   {
     ScopeTime scopeTime ("kd tree  nearestKSearch");
-    for (size_t i = 0; i < cloud_big.points.size (); ++i)
-      kdtree_search->nearestKSearch (cloud_big.points[i], no_of_neighbors, k_indices, k_distances);
+    for (const auto &point : cloud_big.points)
+      kdtree_search->nearestKSearch (point, no_of_neighbors, k_indices, k_distances);
   }
 
   vector<vector<int> > indices_flann;
