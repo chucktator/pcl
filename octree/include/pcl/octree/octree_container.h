@@ -51,6 +51,7 @@ namespace pcl
     /** \brief @b Octree container class that can serve as a base to construct own leaf node container classes.
      *  \author Julius Kammerl (julius@kammerl.de)
      */
+    //template<typename IndexT = int>
     class OctreeContainerBase
     {
     public:
@@ -103,6 +104,7 @@ namespace pcl
       /** \brief Empty addPointIndex implementation. This leaf node does not store any point indices.
        */
       void
+      // addPointIndex (const IndexT&)
       addPointIndex (const int&)
       {
       }
@@ -110,13 +112,15 @@ namespace pcl
       /** \brief Empty getPointIndex implementation as this leaf node does not store any point indices.
        */
       void
-      getPointIndex (int&) const
+	  getPointIndex (int&) const
+      //getPointIndex (IndexT&) const
       {
       }
 
       /** \brief Empty getPointIndices implementation as this leaf node does not store any data. \
             */
       void
+      //getPointIndices (std::vector<IndexT>&) const
       getPointIndices (std::vector<int>&) const
       {
       }
@@ -161,14 +165,14 @@ namespace pcl
        * \return number of DataT elements in leaf node container.
        */
       size_t
-      getSize () const override
+      getSize () const
       {
         return 0;
       }
 
       /** \brief Abstract reset leaf node implementation. */
       void
-      reset () override
+      reset ()
       {
 
       }

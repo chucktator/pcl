@@ -29,6 +29,7 @@ set(incs
   "include/pcl/${SUBSYS_NAME}/octree_pointcloud_pointvector.h"
   "include/pcl/${SUBSYS_NAME}/octree_pointcloud_changedetector.h"
   "include/pcl/${SUBSYS_NAME}/octree_pointcloud_voxelcentroid.h"
+  "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud.h"
   "include/pcl/${SUBSYS_NAME}/octree_pointcloud.h"
   "include/pcl/${SUBSYS_NAME}/octree_iterator.h"
   "include/pcl/${SUBSYS_NAME}/octree_search.h"
@@ -46,6 +47,7 @@ set(impl_incs
   "include/pcl/${SUBSYS_NAME}/impl/octree_search.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/octree_pointcloud_voxelcentroid.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/octree_pointcloud_adjacency.hpp"
+  "include/pcl/${SUBSYS_NAME}/impl/octree_multi_pointcloud.hpp"
 )
 
 set(LIB_NAME "pcl_${SUBSYS_NAME}")

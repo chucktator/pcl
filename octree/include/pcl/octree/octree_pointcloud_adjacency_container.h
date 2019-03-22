@@ -47,7 +47,7 @@ namespace pcl
     /** \brief @b Octree adjacency leaf container class- stores a list of pointers to neighbors, number of points added, and a DataT value
     *    \note This class implements a leaf node that stores pointers to neighboring leaves
     *   \note This class also has a virtual computeData function, which is called by octreePointCloudAdjacency::addPointsFromInputCloud.
-    *   \note You should make explicit instantiations of it for your pointtype/datatype combo (if needed) see supervoxel_clustering.hpp for an example of this
+    *   \note You should make explicit instantiations of it for your pointtype/datatype combo (if needed) see OctreeContainerBase for an example of this
     */
     template<typename PointInT, typename DataT = PointInT>
     class OctreePointCloudAdjacencyContainer : public OctreeContainerBase
@@ -124,7 +124,7 @@ namespace pcl
       
       /** \brief Add new point to container- this just counts points
        * \note To actually store data in the leaves, need to specialize this
-       * for your point and data type as in supervoxel_clustering.hpp
+       * for your point and data type as in OctreeContainerBase
        */
        // param[in] new_point the new point to add  
       void 
