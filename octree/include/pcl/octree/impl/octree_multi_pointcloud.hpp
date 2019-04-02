@@ -10,6 +10,7 @@
  * include it here "manually".
  */
 #include <pcl/octree/impl/octree_pointcloud.hpp>
+#include <pcl/octree/octree_multi_pointcloud.h>
 
 
 

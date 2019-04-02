@@ -57,6 +57,7 @@ int
 main(int argc, char *argv[])
 {
   QApplication app(argc, argv);
+  QApplication app(argc, argv);
   //QApplication::setWindowIcon(QIcon(":/pceditor.icns"));
   MainWindow main_window(argc, argv);
   main_window.show();

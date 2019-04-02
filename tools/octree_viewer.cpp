@@ -52,6 +52,10 @@
 #include <vtkCubeSource.h>
 #include <vtkCleanPolyData.h>
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/octree/octree.h>
+
 class OctreeViewer
 {
 public:
@@ -67,6 +71,13 @@ public:
     show_original_points_ (false),
     point_size_ (1.0)
   {
+
+    pcl::octree::OctreeMultiPointCloud<pcl::PointXYZ> octree_multi (resolution);
+    pcl::octree::SCDevice * intel_device = new pcl::octree::SCDevice();
+    intel_device->identifier = "RealSense 1";
+    intel_device->type = "Intel RealSense D435";
+    octree_multi.registerDevice(intel_device);
+    octree_multi.addPointCloud(intel_device, new pcl::PointCloud<pcl::PointXYZ>());
 
     //try to load the cloud
     if (!loadCloud(filename))

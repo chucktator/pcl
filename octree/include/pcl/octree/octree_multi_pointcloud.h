@@ -5,7 +5,16 @@
 #pragma once
 
 #include <pcl/octree/octree_pointcloud.h>
+#include <pcl/common/io.h>
 #include <set>
+#include <utility>
+#include <chrono>
+
+#include <cassert>      // assert
+#include <cstddef>      // ptrdiff_t
+#include <iterator>     // iterator
+#include <type_traits>  // remove_cv
+#include <utility>      // swap
 
 namespace pcl
 {
@@ -14,47 +23,151 @@ namespace pcl
 
 		struct SCDevice
 		{
-			std::string type;
-			std::string identifier;
-			int point_count;
-		};
-
-
-		class VoxelNode
-		{
-			friend class VoxelList;
-
 			public:
-				VoxelNode(int voxel_key) {
-					this->voxel_key_ = voxel_key;
-				}
+
+				int device_id = SCDevice::id++;
+				std::string type;
+				std::string identifier;
+				int point_count;
 
 			private:
-				int voxel_key_;
-				VoxelNode *next_;
+				static int id;
+
 		};
 
+		int SCDevice::id = 0;
+
+		template <typename ListT> class VoxelList;
+
+		template <typename ContentT>
+		class VoxelNode
+		{
+			friend class VoxelList<ContentT>;
+
+		public:
+			VoxelNode(u_int voxel_key) {
+				this->voxel_key_ = voxel_key;
+			}
+
+			VoxelNode(u_int voxel_key, ContentT *content) {
+				this->voxel_key_ = voxel_key;
+				this->content_ = content;
+			}
+
+		private:
+			u_int voxel_key_ = 0;
+			ContentT* content_ = nullptr;
+			VoxelNode *next_ = nullptr;
+		};
+
+		template <typename ListT>
 		class VoxelList
 		{
+			template <class Type, class UnqualifiedType = std::remove_cv_t<Type>>
+			class ForwardIterator : public std::iterator<std::forward_iterator_tag,
+					UnqualifiedType,
+					std::ptrdiff_t,
+					Type*,
+					Type&>
+			{
+				friend class VoxelList;
+				VoxelNode<UnqualifiedType>* itr;
+
+				explicit ForwardIterator(VoxelNode<UnqualifiedType>* nd)
+						: itr(nd)
+				{
+				}
+
+			public:
+
+				ForwardIterator()   // Default construct gives end.
+						: itr(nullptr)
+				{
+				}
+
+				void swap(ForwardIterator& other) noexcept
+				{
+					using std::swap;
+					swap(itr, other.iter);
+				}
+
+				ForwardIterator& operator++ () // Pre-increment
+				{
+					assert(itr != nullptr && "Out-of-bounds iterator increment!");
+					itr = itr->next_;
+					return *this;
+				}
+
+				ForwardIterator operator++ (int) // Post-increment
+				{
+					assert(itr != nullptr && "Out-of-bounds iterator increment!");
+					ForwardIterator tmp(*this);
+					itr = itr->next_;
+					return tmp;
+				}
+
+				// two-way comparison: v.begin() == v.cbegin() and vice versa
+				template<class OtherType>
+				bool operator == (const ForwardIterator<OtherType>& rhs) const
+				{
+					return itr == rhs.itr;
+				}
+
+				template<class OtherType>
+				bool operator != (const ForwardIterator<OtherType>& rhs) const
+				{
+					return itr != rhs.itr;
+				}
+
+				Type* operator* () const
+				{
+					assert(itr != nullptr && "Invalid iterator dereference!");
+					return itr->content_;
+				}
+
+				Type& operator-> () const
+				{
+					assert(itr != nullptr && "Invalid iterator dereference!");
+					return *(*itr->content_);
+				}
+
+				// One way conversion: iterator -> const_iterator
+				operator ForwardIterator<const Type>() const
+				{
+					return ForwardIterator<const Type>(itr);
+				}
+			};
+
+			// `iterator` and `const_iterator` used by your class:
+			typedef ForwardIterator<ListT> iterator;
+			typedef ForwardIterator<const ListT> const_iterator;
 
 			public:
 
 				VoxelList() {
-					this->head_ = NULL;
-					this->tail_ = NULL;
+					this->head_ = nullptr;
+					this->tail_ = nullptr;
+				}
+
+				uint8_t
+				insert(ListT* const& content) {
+					return this->insert(new VoxelNode<ListT>(reinterpret_cast<std::uintptr_t>(content), content));
 				}
 
 				/** \brief @b Octree multi-pointcloud point wrapper
 				  * \returns 	0 for success
 				  * 			1 for key already exists
 				  * 			2 for first element inserted
+				  * 			3 for unknown error
 				  */
 				uint8_t
-				insert(VoxelNode * const& node) {
+				insert(VoxelNode<ListT> * const& node) {
 					//int head_key, tail_key, curr_key;
 
-					if (this->head_ == NULL && this->tail_ == NULL) {
-						this->insertStart(node);
+					if (this->head_ == nullptr && this->tail_ == nullptr) {
+						this->head_ = node;
+						this->tail_ = node;
+						this->size++;
 						return 2;
 					}
 
@@ -64,41 +177,74 @@ namespace pcl
 
 					if (this->head_->voxel_key_ > node->voxel_key_) {
 						insertStart(node);
+						this->size++;
 						return 0;
 					}
 
 					if (this->tail_->voxel_key_ < node->voxel_key_) {
+						this->size++;
 						insertEnd(node);
 						return 0;
 					}
 
-					VoxelNode *curr = this->head_;
+					VoxelNode<ListT> *curr = this->head_;
 
 					// TODO Divide and Conquer approach
 					// TODO Possibly Doubly Linked List
-					while (curr != NULL) {
+					while (curr != nullptr) {
+						if (curr->voxel_key_ == node->voxel_key_)
+							return 1;
 						if (curr->voxel_key_ < node->voxel_key_) {
 							insertAfter(node, curr);
+							this->size++;
 							return 0;
 						}
 						curr = curr->next_;
 					}
+
+					return 3;
 				}
+
+				void
+				clear() {
+					VoxelNode<ListT> *curr = this->head_;
+					this->head_ = nullptr;
+					this->tail_ = nullptr;
+
+					while (curr != nullptr) {
+						VoxelNode<ListT> *temp = curr;
+						curr = curr->next_;
+						delete temp;
+					}
+				}
+
+				ForwardIterator<ListT>
+				begin() {
+					return ForwardIterator<ListT>(this->head_);
+				}
+
+				ForwardIterator<ListT>
+				end() {
+					return ForwardIterator<ListT>(this->tail_);
+				}
+
+
 
 			private:
 
-				VoxelNode *head_, *tail_;
+				VoxelNode<ListT> *head_, *tail_;
+				uint64_t size = 0;
 
 				void
-				insertStart(VoxelNode * const& node) {
-					VoxelNode *temp = this->head_;
+				insertStart(VoxelNode<ListT> * const& node) {
+					VoxelNode<ListT> *temp = this->head_;
 					this->head_ = node;
 					if (temp != NULL)
 						node->next_ = temp;
 				}
 
 				void
-				insertEnd(VoxelNode * const& node) {
+				insertEnd(VoxelNode<ListT> * const& node) {
 					if (this->tail_ == NULL)
 					{
 						this->insertStart(node);
@@ -109,18 +255,17 @@ namespace pcl
 				}
 
 				void
-				insertBefore(VoxelNode * const& node, VoxelNode * const& before, VoxelNode * const& beforeThat) {
+				insertBefore(VoxelNode<ListT> * const& node, VoxelNode<ListT> * const& before, VoxelNode<ListT> * const& beforeThat) {
 					beforeThat->next_ = node;
 					node->next_ = before;
 				}
 
 				void
-				insertAfter(VoxelNode * const& node, VoxelNode * const& after) {
+				insertAfter(VoxelNode<ListT> * const& node, VoxelNode<ListT> * const& after) {
 					node->next_ = after->next_;
 					after->next_ = node;
 				}
 		};
-
 
 
 
@@ -132,48 +277,48 @@ namespace pcl
 		template<typename PointT>
 		class OctreeMultiPointCloudPointWrapper
 		{
-		public:
-			/** \brief Class initialization. */
-			OctreeMultiPointCloudPointWrapper (PointT *point) {
-				this(point, NULL, NULL);
-			}
+			public:
+				/** \brief Class initialization. */
+				OctreeMultiPointCloudPointWrapper (PointT *point) {
+					this(point, NULL, NULL);
+				}
 
-			OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device) {
-				this(point, device, NULL);
-			}
+				OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device) {
+					this(point, device, NULL);
+				}
 
-			OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device, PointCloud<PointT> *cloud) {
-				this->point_ = point;
-				this->device_ = device;
-				this->cloud_ = cloud;
-			}
+				OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device, PointCloud<PointT> *cloud) {
+					this->point_ = point;
+					this->device_ = device;
+					this->cloud_ = cloud;
+				}
 
-			/** \brief Empty class deconstructor. */
-			~OctreeMultiPointCloudPointWrapper () = default;
-
-
-			SCDevice*
-			getDevice() {
-				return this->device_;
-			}
-
-			PointT*
-			getPoint() {
-				return this->point_;
-			}
-
-			PointCloud<PointT>*
-			getPointCloud() {
-				return this->cloud_;
-			}
+				/** \brief Empty class deconstructor. */
+				~OctreeMultiPointCloudPointWrapper () = default;
 
 
+				SCDevice*
+				getDevice() {
+					return this->device_;
+				}
+
+				PointT*
+				getPoint() {
+					return this->point_;
+				}
+
+				PointCloud<PointT>*
+				getPointCloud() {
+					return this->cloud_;
+				}
 
 
-		private:
-			SCDevice *device_;
-			PointT *point_;
-			PointCloud<PointT> *cloud_;
+
+
+			private:
+				SCDevice *device_;
+				PointT *point_;
+				PointCloud<PointT> *cloud_;
 		};
 
 
@@ -187,6 +332,8 @@ namespace pcl
 			public:
 				/** \brief Class initialization. */
 				OctreeMultiPointCloudContainer () {
+					this->virgin_ = true;
+					this->point_map_ = new std::map<int, std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
 					this->reset();
 				}
 
@@ -195,10 +342,18 @@ namespace pcl
 				}
 
 				void
-				registerDevices(std::set<SCDevice*> devices) {
-					for (std::set<SCDevice*>::iterator it = devices.begin(), end = devices.end(); it != end; it++) {
-						this->point_map_.insert(it, std::vector<PointT>());
+				registerDevices(std::set<SCDevice*> *devices) {
+					if (!this->virgin_)
+						return;
 
+					if (!this->point_map_)
+						this->point_map_ = new std::map<int, std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
+					// std::map<SCDevice*, std::vector<PointT*>> point_map_;
+					for (auto it = devices->begin(), end = devices->end(); it != end; it++) {
+						auto point_vector = new std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>;
+						point_vector->reserve((*it)->point_count / 2000);
+						this->point_map_->insert({ (*it)->device_id, point_vector });
+						//this->point_map_->insert({ (*it)->device_id, new std::vector<OctreeMultiPointCloudPointWrapper<PointT>*> });
 					}
 				}
 
@@ -243,13 +398,31 @@ namespace pcl
 
 					//point_sum_ += *(new_point->getPoint());
 
-
-					this->point_map_.insert(new_point->getDevice(), new_point);
+					//if (!this->point_map_->empty()) {
+					//	this->point_map_->find(new_point->getDevice()->device_id)->second->push_back(new_point);
+					//}
+					try {
+						this->point_map_->at(new_point->getDevice()->device_id)->push_back(new_point);
+					}
+					catch (const std::out_of_range& oor) {
+						std::cerr << "Out of Range error: " << oor.what() << '\n';
+					}
 				}
 
 				void
 				clearPointsForDevice(SCDevice* device) {
-					this->point_map_.find(device)->second.clear();
+					//if (this->point_map_ && !this->point_map_->empty()) {
+						//typename std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT> *> *>::iterator ret = this->point_map_->find(
+						//		device->device_id);
+						//if (ret != this->point_map_->end())
+							//ret->second->clear();
+					//}
+					try {
+						this->point_map_->at(device->device_id)->clear();
+					}
+					catch (const std::out_of_range& oor) {
+						std::cerr << "Out of Range error: " << oor.what() << '\n';
+					}
 				}
 
 				/** \brief Calculate centroid of voxel.
@@ -301,13 +474,13 @@ namespace pcl
 
 				bool
 				isVirgin() {
-					return virgin_;
+					return this->virgin_;
 				}
 
 			private:
 				unsigned int point_counter_;
 				PointT point_sum_;
-				std::map<SCDevice*, std::vector<PointT>> point_map_;
+				std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>* point_map_ = new std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;  // Saves a combination of device id and all points for that device belonging to this leaf node (voxel)
 				bool virgin_ = true;
 
 
@@ -351,29 +524,64 @@ namespace pcl
 				  */
 				void
 				addPointCloud (SCDevice *device, PointCloud<PointT> *cloud) {
+					pcl::PointCloud<PointT> *cloud_copy = new pcl::PointCloud<PointT>();
+
+					pcl::copyPointCloud(*cloud, *cloud_copy);
+
 					// Don't allow the addition of new devices after insertion of points has begun
 					this->running = true;
 
-					// Remove all old points for the given device first
-					std::set<LeafContainerT*> *occupied_voxels = &(this->device_voxel_map_.find(device)->second);
-					for (auto it = occupied_voxels->begin(), end = occupied_voxels->end(); it != end; it++) {
-						it->clearPointsForDevice(device);
-					}
+					std::cout << "Adding PointCloud for device '" << device->identifier << "' of type '" << device->type << "'" << std::endl;
 
-					// Then insert the point cloud for the sudo given device
-					std::vector<PointT> *points;
-					points = cloud->points;
+					auto start = std::chrono::steady_clock::now();
+					// Remove all old points for the given device first
+					//std::set<LeafContainerT*> *occupied_voxels = this->device_voxel_map_.find(device->device_id)->second;
+					//VoxelList<LeafContainerT> *occupied_voxels = this->device_voxel_map_.find(device->device_id)->second;
+					VoxelList<LeafContainerT> *occupied_voxels;
+					try {
+						 occupied_voxels = this->device_voxel_map_.at(device->device_id);
+					}
+					catch (const std::out_of_range& oor) {
+						std::cerr << "Out of Range error: " << oor.what() << '\n';
+						return;
+					}
+					//pcl::octree::OctreeMultiPointCloudContainer<pcl::PointXYZ>* temp;
+					//temp->clearPointsForDevice();
+					//for (typename std::set<LeafContainerT*>::iterator it = occupied_voxels->begin(), end = occupied_voxels->end(); it != end; it++) {
+					for (auto item : *occupied_voxels) {
+						if (item->isVirgin ())
+							item->registerDevices(&registered_devices_);
+						else
+							item->clearPointsForDevice(device);
+					}
+					//delete occupied_voxels;
+					occupied_voxels->clear();
+					auto end = std::chrono::steady_clock::now();
+
+					std::cout << "Deleting old points took "
+						 << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+						 << " ms" << std::endl;
+
+					start = std::chrono::steady_clock::now();
+					// Then insert the point cloud for the given device
+					//std::vector< PointT, Eigen::aligned_allocator< PointT > > *points = &cloud_copy->points;
+					auto *points = &cloud_copy->points;
 					for (int i=0; i<points->size(); i++) {
-						this->addPoint(new OctreeMultiPointCloudPointWrapper<PointT>(&(points[i]), cloud, device));
+						this->addPoint(new OctreeMultiPointCloudPointWrapper<PointT>(&points->at(i), device, cloud));
 						//return;
 					}
+					end = std::chrono::steady_clock::now();
+					std::cout << "Inserting new points took "
+							  << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+							  << " ms" << std::endl;
+					delete cloud_copy;
 				}
 
 				/** \brief Add DataT object to leaf node at octree key.
 				  * \param pointIdx_arg
 				  */
 				void
-				addPointIdx (const int point_idx_arg) override {
+				addPointIdx (const int) override {
 					return;
 				}
 
@@ -381,13 +589,15 @@ namespace pcl
 				registerDevice(SCDevice* device) {
 					if (!this->running) {
 						bool ret = registered_devices_.insert(device).second;
-						if (ret)
-							device_voxel_map_.insert(std::pair<SCDevice*, std::set<uint32_t >>(device, std::set<uint32_t >()));
+						if (ret) {
+							//device_voxel_map_.insert(std::pair<int, std::set<LeafContainerT*>*>(device->device_id, new std::set<LeafContainerT*>()));
+							device_voxel_map_.insert(device_voxel_map_.end(), new VoxelList<LeafContainerT>());
+						}
 					}
 
 					/*for (typename OctreeMultiPointCloud<PointT>::LeafNodeBreadthFirstIterator it = this->leaf_breadth_begin(),
 								end=this->leaf_breadth_end(); it!= end; ++it) {
-						it->
+						it.getLeafContainer().registerDevices();
 					}*/
 					return false;
 				}
@@ -398,10 +608,10 @@ namespace pcl
 					OctreeKey key;
 
 					// make sure bounding box is big enough
-					adoptBoundingBoxToPoint (new_point);
+					this->adoptBoundingBoxToPoint (*(new_point->getPoint()));
 
 					// generate key
-					genOctreeKeyforPoint (new_point, key);
+					this->genOctreeKeyforPoint (*(new_point->getPoint()), key);
 
 					LeafNode* leaf_node;
 					BranchNode* parent_branch_of_leaf_node;
@@ -417,10 +627,10 @@ namespace pcl
 							// index to branch child
 							unsigned char child_idx = key.getChildIdxWithDepthMask (depth_mask*2);
 
-							expandLeafNode (leaf_node,
-											parent_branch_of_leaf_node,
-											child_idx,
-											depth_mask);
+							this->expandLeafNode (leaf_node,
+												  parent_branch_of_leaf_node,
+												  child_idx,
+												  depth_mask);
 
 							depth_mask = this->createLeafRecursive (key, this->depth_mask_ ,this->root_node_, leaf_node, parent_branch_of_leaf_node);
 							leaf_obj_count = (*leaf_node)->getSize ();
@@ -430,16 +640,20 @@ namespace pcl
 
 
 					if ((*leaf_node)->isVirgin ())
-						(*leaf_node)->registerDevices(registered_devices_);
+						(*leaf_node)->registerDevices(&registered_devices_);
 					(*leaf_node)->addPoint (new_point);
 
-					device_voxel_map_.find(new_point->getDevice())->second.insert((*leaf_node));
+					auto temp = device_voxel_map_.at(new_point->getDevice()->device_id);
+					temp->second->insert(reinterpret_cast<LeafContainerT*>(&(*leaf_node)));
+					//temp->second->insert(new OctreeMultiPointCloudContainer<PointXYZ>);
 				}
 
 			private:
 
-				std::set<SCDevice*> registered_devices_;
-				std::map<SCDevice*, std::set<LeafContainerT*>> device_voxel_map_;
+				std::set<SCDevice*> registered_devices_;  // Saves list of all currently registered devices
+				//std::map<int, std::set<LeafContainerT*>*> device_voxel_map_;  // Saves combination of device id and all occupied voxels
+				std::vector<VoxelList<LeafContainerT>*> device_voxel_map_;  // Saves combination of device id and all occupied voxels
+				//VoxelList* device_voxel_map = new VoxelList;
 				bool running = false;
 
 
@@ -447,5 +661,5 @@ namespace pcl
 	}
 }
 
-// Note: Don't precompile this octree type to speed up compilation. It's probably rarely used.
+// TODO Evaluate Notice: Note: Don't precompile this octree type to speed up compilation. It's probably rarely used.
 //#include <pcl/octree/impl/octree_pointcloud_voxelcentroid.hpp>
