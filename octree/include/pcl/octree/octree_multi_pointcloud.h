@@ -333,7 +333,8 @@ namespace pcl
 				/** \brief Class initialization. */
 				OctreeMultiPointCloudContainer () {
 					this->virgin_ = true;
-					this->point_map_ = new std::map<int, std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
+					//this->point_map_ = new std::map<int, std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
+					this->point_map_ = new std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
 					this->reset();
 				}
 
@@ -347,12 +348,13 @@ namespace pcl
 						return;
 
 					if (!this->point_map_)
-						this->point_map_ = new std::map<int, std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
+						this->point_map_ = new std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
+						//this->point_map_ = new std::map<int, std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
 					// std::map<SCDevice*, std::vector<PointT*>> point_map_;
 					for (auto it = devices->begin(), end = devices->end(); it != end; it++) {
 						auto point_vector = new std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>;
-						point_vector->reserve((*it)->point_count / 2000);
-						this->point_map_->insert({ (*it)->device_id, point_vector });
+						point_vector->reserve((*it)->point_count / 1000);
+						this->point_map_->insert(this->point_map_->end(), point_vector);
 						//this->point_map_->insert({ (*it)->device_id, new std::vector<OctreeMultiPointCloudPointWrapper<PointT>*> });
 					}
 				}
@@ -418,7 +420,8 @@ namespace pcl
 							//ret->second->clear();
 					//}
 					try {
-						this->point_map_->at(device->device_id)->clear();
+						if (this->point_map_ && !this->virgin_)
+							this->point_map_->at(device->device_id)->clear();
 					}
 					catch (const std::out_of_range& oor) {
 						std::cerr << "Out of Range error: " << oor.what() << '\n';
@@ -644,7 +647,8 @@ namespace pcl
 					(*leaf_node)->addPoint (new_point);
 
 					auto temp = device_voxel_map_.at(new_point->getDevice()->device_id);
-					temp->second->insert(reinterpret_cast<LeafContainerT*>(&(*leaf_node)));
+					temp->insert(reinterpret_cast<LeafContainerT*>(&(*leaf_node)));
+					//temp->second->insert(reinterpret_cast<LeafContainerT*>(&(*leaf_node)));
 					//temp->second->insert(new OctreeMultiPointCloudContainer<PointXYZ>);
 				}
 
