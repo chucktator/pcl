@@ -40,24 +40,27 @@ namespace pcl
 		template <typename ListT> class VoxelList;
 
 		template <typename ContentT>
-		class VoxelNode
-		{
+		class VoxelNode {
 			friend class VoxelList<ContentT>;
 
-		public:
-			VoxelNode(u_int voxel_key) {
-				this->voxel_key_ = voxel_key;
-			}
+			public:
+				VoxelNode(u_int voxel_key) {
+					this->voxel_key_ = voxel_key;
+				}
 
-			VoxelNode(u_int voxel_key, ContentT *content) {
-				this->voxel_key_ = voxel_key;
-				this->content_ = content;
-			}
+				VoxelNode(u_int voxel_key, ContentT *content) {
+					this->voxel_key_ = voxel_key;
+					this->content_ = content;
+				}
 
-		private:
-			u_int voxel_key_ = 0;
-			ContentT* content_ = nullptr;
-			VoxelNode *next_ = nullptr;
+				~VoxelNode() {
+					delete content;
+				}
+
+			private:
+				u_int voxel_key_ = 0;
+				ContentT* content_ = nullptr;
+				VoxelNode *next_ = nullptr;
 		};
 
 		template <typename ListT>
@@ -148,16 +151,14 @@ namespace pcl
 					this->head_ = nullptr;
 					this->tail_ = nullptr;
 				}
-
+			
 				~VoxelList() {
 					this->clear();
 				}
 
 				uint8_t
 				insert(ListT* const& content) {
-					uintptr_t  cast_content = reinterpret_cast<std::uintptr_t>(content);
-					VoxelNode<ListT> *node = new VoxelNode<ListT>(cast_content, content);
-					return this->insert(node);
+					return this->insert(new VoxelNode<ListT>(reinterpret_cast<std::uintptr_t>(content), content));
 				}
 
 				/** \brief @b Octree multi-pointcloud point wrapper
@@ -222,7 +223,6 @@ namespace pcl
 						curr = curr->next_;
 						delete temp;
 					}
-					this->size = 0;
 				}
 
 				ForwardIterator<ListT>
@@ -345,7 +345,7 @@ namespace pcl
 					this->point_map_ = new std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>();
 				}
 
-				/** \brief Empty class deconstructor. */
+				/** \brief Class deconstructor. */
 				~OctreeMultiPointCloudContainer () {
 					for (auto dev = this->point_map_->begin(), end = this->point_map_->end(); dev != end; ++dev) {
 						for (auto points = (*dev)->begin(), end = (*dev)->end(); points != end; ++points) {
