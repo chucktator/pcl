@@ -48,6 +48,7 @@ Work in progress: patch by Marco (AUG,19th 2012)
 #define _CRT_SECURE_NO_DEPRECATE
 
 #include <iostream>
+#include <thread>
 
 #include <pcl/console/parse.h>
 
@@ -85,6 +86,7 @@ typedef pcl::ScopeTime ScopeTimeT;
 #include <pcl/gpu/kinfu_large_scale/screenshot_manager.h>
 
 using namespace std;
+using namespace std::chrono_literals;
 using namespace pcl;
 using namespace Eigen;
 
@@ -127,11 +129,7 @@ vector<string> getPcdFilesInDir(const string& directory)
     if (fs::is_regular_file(pos->status()) )
       if (fs::extension(*pos) == ".pcd")
       {
-#if BOOST_FILESYSTEM_VERSION == 3
         result.push_back (pos->path ().string ());
-#else
-        result.push_back (pos->path ());
-#endif
         cout << "added: " << result.back() << endl;
       }
 
@@ -1016,7 +1014,7 @@ struct KinFuLSApp
         //~ cout << "In main loop" << endl;                  
       } 
       exit_ = true;
-      boost::this_thread::sleep (boost::posix_time::millisec (100));
+      std::this_thread::sleep_for(100ms);
 
       if (!triggered_capture)     
         capture_.stop (); // Stop stream

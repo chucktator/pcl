@@ -45,7 +45,7 @@
 #include <boost/filesystem.hpp>
 #include <pcl/visualization/pcl_visualizer.h>
 
-
+using namespace std::chrono_literals;
 
 #define SHOW_FPS 1
 #if SHOW_FPS
@@ -194,7 +194,7 @@ class OpenNIGrabFrame
       // wait until user quits program with Ctrl-C, but no busy-waiting -> sleep (1);
       while (!visualizer_->wasStopped())
       {
-        boost::this_thread::sleep (boost::posix_time::microseconds (100));
+        std::this_thread::sleep_for(100us);
 
         visualizer_->spinOnce ();
         
@@ -212,9 +212,6 @@ class OpenNIGrabFrame
         }
       }
       
-      //while (!quit_)
-        //boost::this_thread::sleep (boost::posix_time::seconds (1));
-   
       // stop the grabber
       grabber_.stop ();
     }
@@ -238,19 +235,11 @@ class OpenNIGrabFrame
           std::cerr << "directory \"" << path.parent_path () << "\" does not exist!\n";
           exit (1);
         }
-#if BOOST_FILESYSTEM_VERSION == 3
         file_name_ = path.stem ().string ();
-#else
-        file_name_ = path.stem ();
-#endif
       }
       
       std::cout << "dir: " << dir_name_ << " :: " << path.parent_path () << std::endl;
-#if BOOST_FILESYSTEM_VERSION == 3
       std::cout << "file: " << file_name_ << " :: " << path.stem (). string () << std::endl;
-#else
-      std::cout << "file: " << file_name_ << " :: " << path.stem () << std::endl;
-#endif
       
       if (pcd_format == "b" || pcd_format == "all")
         format_ |= 1;

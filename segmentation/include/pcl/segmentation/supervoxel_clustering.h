@@ -40,6 +40,8 @@
 
 #pragma once
 
+#include <boost/version.hpp>
+
 #include <pcl/features/normal_3d.h>
 #include <pcl/pcl_base.h>
 #include <pcl/point_cloud.h>
@@ -166,11 +168,11 @@ namespace pcl
       typedef pcl::octree::OctreePointCloudAdjacencyContainer<PointT, VoxelData> LeafContainerT;
       typedef std::vector <LeafContainerT*> LeafVectorT;
 
-      typedef typename pcl::PointCloud<PointT> PointCloudT;
-      typedef typename pcl::PointCloud<Normal> NormalCloudT;
-      typedef typename pcl::octree::OctreePointCloudAdjacency<PointT, LeafContainerT> OctreeAdjacencyT;
-      typedef typename pcl::octree::OctreePointCloudSearch <PointT> OctreeSearchT;
-      typedef typename pcl::search::KdTree<PointT> KdTreeT;
+      typedef pcl::PointCloud<PointT> PointCloudT;
+      typedef pcl::PointCloud<Normal> NormalCloudT;
+      typedef pcl::octree::OctreePointCloudAdjacency<PointT, LeafContainerT> OctreeAdjacencyT;
+      typedef pcl::octree::OctreePointCloudSearch <PointT> OctreeSearchT;
+      typedef pcl::search::KdTree<PointT> KdTreeT;
       typedef boost::shared_ptr<std::vector<int> > IndicesPtr;
 
       using PCLBase <PointT>::initCompute;
@@ -524,7 +526,11 @@ namespace pcl
       };
 
       //Make boost::ptr_list can access the private class SupervoxelHelper
+#if BOOST_VERSION >= 107000
+      friend void boost::checked_delete<> (const typename pcl::SupervoxelClustering<PointT>::SupervoxelHelper *) BOOST_NOEXCEPT;
+#else
       friend void boost::checked_delete<> (const typename pcl::SupervoxelClustering<PointT>::SupervoxelHelper *);
+#endif
 
       typedef boost::ptr_list<SupervoxelHelper> HelperListT;
       HelperListT supervoxel_helpers_;
