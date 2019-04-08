@@ -14,6 +14,7 @@ endif()
 
 set(srcs
   src/octree_inst.cpp
+  #src/octree_multi_pointcloud.cpp
 )
 
 set(incs
@@ -36,6 +37,13 @@ set(incs
   "include/pcl/${SUBSYS_NAME}/octree2buf_base.h"
   "include/pcl/${SUBSYS_NAME}/octree_pointcloud_adjacency.h"
   "include/pcl/${SUBSYS_NAME}/octree_pointcloud_adjacency_container.h"
+  "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud.h"
+
+  "include/pcl/${SUBSYS_NAME}/octree_voxel_list.h"
+  "include/pcl/${SUBSYS_NAME}/octree_point_list.h"
+  "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud_container.h"
+  "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud_wrapper.h"
+  "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud_device.h"
 )
 
 set(impl_incs
@@ -57,3 +65,4 @@ PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_
 # Install include files
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}" ${incs})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/impl" ${impl_incs})
+

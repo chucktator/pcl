@@ -51,4 +51,9 @@
 #include <pcl/octree/octree_pointcloud_voxelcentroid.h>
 #include <pcl/octree/octree_pointcloud_adjacency.h>
 
+// MultiPointcloud extension
+#include <pcl/octree/octree_multi_pointcloud.h>
+//#include <pcl/octree/octree_voxel_list.h>
+//#include <pcl/octree/octree_multi_pointcloud_wrapper.h>
+
 #include <pcl/octree/octree_search.h>

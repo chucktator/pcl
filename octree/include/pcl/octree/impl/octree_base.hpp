@@ -329,7 +329,7 @@ namespace pcl
               break;
 
             case LEAF_NODE:
-              return_leaf_arg = static_cast<LeafNode*> (child_node);;
+              return_leaf_arg = static_cast<LeafNode*> (child_node);
               parent_of_leaf_arg = branch_arg;
               break;
           }
