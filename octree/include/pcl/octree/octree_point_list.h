@@ -22,8 +22,8 @@ namespace pcl {
 			}
 
 			~PointNode() {
-				//if (this->content_ != nullptr)
-					//delete this->content_;
+				if (this->content_ != nullptr)
+					delete this->content_;
 			}
 
 		private:
@@ -137,27 +137,41 @@ namespace pcl {
 				if (this->head_ == nullptr && this->tail_ == nullptr) {
 					this->head_ = node;
 					this->tail_ = node;
-					this->size++;
+					this->size_++;
 					return 2;
 				}
 
 				insertEnd(node);
+				this->size_++;
 
 				return 0;
 			}
 
 			void
 			clear() {
+				if (this->size() == 0)
+					return;
+
 				PointNode<PointT> *curr = this->head_;
 				this->head_ = nullptr;
 				this->tail_ = nullptr;
 
+				int i=0;
 				while (curr != nullptr) {
 					PointNode<PointT> *temp = curr;
 					curr = curr->next_;
 					delete temp;
+					i++;
 				}
-				this->size = 0;
+				//if (this->size_ - i > 0)
+					//std::cout << "I have deleted " << i << " of " << this->size_ << " Points, leaving " << (this->size_ - i) << " left in memory." << std::endl;
+				this->size_ = 0;
+
+			}
+
+			uint64_t
+			size() {
+				return this->size_;
 			}
 
 			ForwardIterator<PointT>
@@ -174,7 +188,7 @@ namespace pcl {
 		private:
 
 			PointNode<PointT> *head_, *tail_;
-			uint64_t size = 0;
+			uint64_t size_ = 0;
 
 			void
 			insertStart(PointNode<PointT> *const &node) {

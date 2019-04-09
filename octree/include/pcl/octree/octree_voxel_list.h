@@ -25,10 +25,7 @@ namespace pcl {
 				this->content_ = content;
 			}
 
-			~VoxelNode() {
-				//if (this->content_ != nullptr)
-					//delete this->content_;
-			}
+			~VoxelNode() = default;
 
 		private:
 			u_int voxel_key_ = 0;
@@ -147,7 +144,7 @@ namespace pcl {
 				if (this->head_ == nullptr && this->tail_ == nullptr) {
 					this->head_ = node;
 					this->tail_ = node;
-					this->size++;
+					this->size_++;
 					return 2;
 				}
 
@@ -157,29 +154,32 @@ namespace pcl {
 
 				if (this->head_->voxel_key_ > node->voxel_key_) {
 					insertStart(node);
-					this->size++;
+					this->size_++;
 					return 0;
 				}
 
 				if (this->tail_->voxel_key_ < node->voxel_key_) {
-					this->size++;
+					this->size_++;
 					insertEnd(node);
 					return 0;
 				}
 
-				VoxelNode<ListT> *curr = this->head_;
+				VoxelNode<ListT> *curr = this->head_, *curr_next;
 
 				// TODO Divide and Conquer approach
 				// TODO Possibly Doubly Linked List
 				while (curr != nullptr) {
-					if (curr->voxel_key_ == node->voxel_key_)
+					curr_next = curr->next_;
+					if (curr_next != nullptr && curr_next->voxel_key_ == node->voxel_key_)
 						return 1;
 					if (curr->voxel_key_ < node->voxel_key_) {
-						insertAfter(node, curr);
-						this->size++;
-						return 0;
+						//if (curr->next_ != nullptr && node->voxel_key_ < curr->next_->voxel_key_) {
+							insertAfter(node, curr);
+							this->size_++;
+							return 0;
+						//}
 					}
-					curr = curr->next_;
+					curr = curr_next;
 				}
 
 				return 3;
@@ -191,12 +191,16 @@ namespace pcl {
 				this->head_ = nullptr;
 				this->tail_ = nullptr;
 
+				int i=0;
 				while (curr != nullptr) {
 					VoxelNode<ListT> *temp = curr;
 					curr = curr->next_;
 					delete temp;
+					i++;
 				}
-				this->size = 0;
+				if (this->size_ - i > 0)
+					std::cout << "I have deleted " << i << " of " << this->size_ << " VoxelNodes, leaving " << (this->size_ - i) << " in memory." << std::endl;
+				this->size_ = 0;
 			}
 
 			ForwardIterator<ListT>
@@ -213,7 +217,7 @@ namespace pcl {
 		private:
 
 			VoxelNode<ListT> *head_, *tail_;
-			uint64_t size = 0;
+			uint64_t size_ = 0;
 
 			void
 			insertStart(VoxelNode<ListT> *const &node) {

@@ -14,6 +14,7 @@ namespace pcl {
 			std::string type;
 			std::string identifier;
 			int point_count;
+			float accuracy;
 
 		private:
 			static int id;

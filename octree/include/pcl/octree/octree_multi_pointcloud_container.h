@@ -7,6 +7,7 @@
 
 #include <pcl/octree/octree_multi_pointcloud_wrapper.h>
 #include <pcl/octree/octree_point_list.h>
+//#include <eigen3/Eigen/Core>
 
 namespace pcl {
 	namespace octree {
@@ -100,8 +101,6 @@ namespace pcl {
 				virgin_ = false;
 				using namespace pcl::common;
 
-				++point_counter_;
-
 				//point_sum_ += *(new_point->getPoint());
 
 				//if (!this->point_map_->empty()) {
@@ -111,6 +110,7 @@ namespace pcl {
 					auto device_vector = this->point_map_->at(new_point->getDevice()->device_id);
 					//device_vector->insert(device_vector->end(), new_point);
 					device_vector->insert(new_point);
+					point_counter_++;
 				}
 				catch (const std::out_of_range& oor) {
 					std::cerr << "Out of Range error: " << oor.what() << '\n';
@@ -119,7 +119,10 @@ namespace pcl {
 
 			void
 			clearPointsForDevice(SCDevice* device) {
-				this->point_map_->at(device->device_id)->clear();
+				PointList<OctreeMultiPointCloudPointWrapper<PointT>> *list = this->point_map_->at(device->device_id);
+				//uint64_t  size = list->size();
+				list->clear();
+				//this->point_counter_ -= this->addedSize();
 				//if (this->point_map_ && !this->point_map_->empty()) {
 				//typename std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT> *> *>::iterator ret = this->point_map_->find(
 				//		device->device_id);
@@ -167,8 +170,23 @@ namespace pcl {
 			void
 			getWeightedCentroid (PointT& centroid_arg) const {
 				using namespace pcl::common;
+				PointT point_sum;
+				float weight_sum;
+				// std::vector<PointList<OctreeMultiPointCloudPointWrapper<PointT>>*>* point_map_  = nullptr;
+				for (auto devices = this->point_map_->begin(), devices_end = this->point_map_->end(); devices != devices_end; devices++) {
+					for (auto points = (*devices)->begin(), end = (*devices)->end(); points != end; points++) {
+						OctreeMultiPointCloudPointWrapper<PointT>* point = (*points);
+						float acc = point->getDevice()->accuracy;
+						point_sum.x += point->getPoint()->x * acc;
+						point_sum.y += point->getPoint()->y * acc;
+						point_sum.z += point->getPoint()->z * acc;
+						weight_sum += acc;
+					}
+				}
 
-				// TODO calculate centroid from all contained points
+				centroid_arg.x = point_sum.x / weight_sum;
+				centroid_arg.y = point_sum.y / weight_sum;
+				centroid_arg.z = point_sum.z / weight_sum;
 
 				/*if (point_counter_)
 				{
@@ -187,7 +205,7 @@ namespace pcl {
 				using namespace pcl::common;
 
 				point_counter_ = 0;
-				point_sum_ *= 0.0f;
+				//point_sum_ *= 0.0f;
 
 				/*if (this->point_map_ != nullptr) {
 					for (auto dev = this->point_map_->begin(), end = this->point_map_->end(); dev != end; ++dev) {
@@ -201,18 +219,43 @@ namespace pcl {
 
 			}
 
+			unsigned int
+			size() {
+				return point_counter_;
+			}
+
+			unsigned int
+			addedSize() {
+				unsigned int ret = 0;
+				for (auto devices = this->point_map_->begin(), devices_end = this->point_map_->end(); devices != devices_end; devices++) {
+					ret += (*devices)->size();
+				}
+				return ret;
+			}
+
+			void
+			setKey(OctreeKey const& key) {
+				this->key_ = key;
+			}
+
+			OctreeKey const&
+			getKey() {
+				return this->key_;
+			}
+
 			bool
 			isVirgin() {
 				return virgin_;
 			}
 
 		private:
-			unsigned int point_counter_;
-			PointT point_sum_;
+			unsigned int point_counter_ = 0;
+			//PointT point_sum_;
 			//std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>* point_map_  = nullptr;  // Saves a combination of device id and all points for that device belonging to this leaf node (voxel)
 			std::vector<PointList<OctreeMultiPointCloudPointWrapper<PointT>>*>* point_map_  = nullptr;  // Saves a combination of device id and all points for that device belonging to this leaf node (voxel)
 			// = new std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>()
 			bool virgin_ = true;
+			OctreeKey key_;
 
 
 
