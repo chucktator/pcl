@@ -229,8 +229,11 @@ namespace pcl {
 					// generate key
 					this->genOctreeKeyforPoint (*(new_point->getPoint()), key);
 
-					// add point to octree at key
-					LeafContainerT* container = this->createLeaf(key);
+					LeafContainerT* container = this->findLeaf(key);
+					if (container == nullptr) {
+						// add point to octree at key
+						container = this->createLeaf(key);
+					}
 
 					if (container->isVirgin())
 						container->registerDevices(&registered_devices_);
