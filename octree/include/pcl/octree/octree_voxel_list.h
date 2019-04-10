@@ -37,12 +37,7 @@ namespace pcl {
 		class VoxelList {
 
 			template <class Type, class UnqualifiedType = std::remove_cv_t<Type>>
-			class ForwardIterator : public std::iterator<std::forward_iterator_tag,
-					UnqualifiedType,
-					std::ptrdiff_t,
-					Type*,
-					Type&>
-			{
+			class ForwardIterator : public std::iterator<std::forward_iterator_tag, UnqualifiedType, std::ptrdiff_t, Type*, Type&> {
 				friend class VoxelList;
 				VoxelNode<UnqualifiedType>* itr;
 
@@ -183,6 +178,45 @@ namespace pcl {
 				}
 
 				return 3;
+			}
+
+			bool
+			deleteVoxel(u_int voxel_key) {
+				//std::cout << "Deleting voxel with key " << voxel_key << std::endl;
+				VoxelNode<ListT> *curr = this->head_, *prev = nullptr;
+
+				/*if (this->head_->voxel_key_ == voxel_key) {
+					this->head_ = this->head_->next_;
+					delete curr;
+					return true;
+				}*/
+
+				while (curr != nullptr) {
+					if (curr->voxel_key_ == voxel_key) {
+						if (prev == nullptr) {
+							this->head_ = this->head_->next_;
+						} else {
+							prev->next_ = curr->next_;
+						}
+						delete curr;
+						return true;
+					}
+					prev = curr;
+					curr = curr->next_;
+				}
+				return false;
+			}
+
+			ListT*
+			find(u_int voxel_key) {
+				VoxelNode<ListT> *curr = this->head_;
+
+				while (curr != nullptr) {
+					if (curr->voxel_key_ == voxel_key) {
+						return curr->content_;
+					}
+					curr = curr->next_;
+				}
 			}
 
 			void
