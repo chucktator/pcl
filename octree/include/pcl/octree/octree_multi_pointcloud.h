@@ -73,6 +73,10 @@ namespace pcl {
 					}
 				}
 
+				/** \brief Calculate the resulting merged point cloud
+				  * \param[out] result_out the object in which to save the calculated point cloud
+				  * \return The size of the resulting ppoint cloud.
+				  */
 				size_t
 				getResultPointCloud(PointCloud<PointT>& result_out) {
 					std::cout << "This PointCloud should contain " << this->getLeafCount() << " points." << std::endl;
@@ -92,8 +96,9 @@ namespace pcl {
 					return this->leaf_count_;
 				}
 
-				/** \brief Add new point to voxel.
-				  * \param[in] new_point the new point to add
+				/** \brief Add new point cloud to voxel.
+				  * \param[in] device the device for which the new point cloud is added
+				  * \param[in] cloud the new point cloud
 				  */
 				void
 				addPointCloud (SCDevice *device, PointCloud<PointT> *cloud) {
@@ -196,6 +201,10 @@ namespace pcl {
 					return;
 				}
 
+				/** \brief Register a new device with the multi point cloud octree. Cannot be called after point cloud streaming has started.
+				  * \param[in] device the device to register
+				  * \return Success of registration.
+				  */
 				bool
 				registerDevice(SCDevice* device) {
 					if (!this->running) {
@@ -215,8 +224,10 @@ namespace pcl {
 					return false;
 				}
 
-				//void
-				//uintptr_t
+				/** \brief Add new point to octree.
+				  * \param[in] new_point the new point to add
+				  * \return Pointer to the Voxel into which the point was inserted.
+				  */
 				LeafContainerT*
 				addPoint (OctreeMultiPointCloudPointWrapper<PointT>* const& new_point) {
 					this->running = true;

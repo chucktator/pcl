@@ -87,6 +87,7 @@ namespace pcl {
 
 			/** \brief Add new point to voxel.
 			  * \param[in] new_point the new point to add
+			  * \param[in] point_cloud the point cloud of origin for the inserted point
 			  */
 			void
 			addPoint (PointT *new_point, PointCloud<PointT> *point_cloud) {
