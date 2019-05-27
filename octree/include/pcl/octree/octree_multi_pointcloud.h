@@ -165,7 +165,7 @@ namespace pcl {
 						auto new_point = new OctreeMultiPointCloudPointWrapper<PointT>(&(points->at(i)), device, cloud);
 						LeafContainerT *voxel = this->addPoint(new_point);
 						//new_voxels.insert(voxel);
-						//deletable_voxels.deleteVoxel(voxel);
+						//deletable_voxels.remove(voxel);
 					}
 					end = std::chrono::steady_clock::now();
 					std::cout << "Inserting new points took "
@@ -309,7 +309,7 @@ namespace pcl {
 				std::vector<PointCloud<PointT>*> current_point_clouds_;
 				//std::map<int, std::set<LeafContainerT*>*> device_voxel_map_;  // Saves combination of device id and all occupied voxels
 				//std::vector<VoxelList<LeafContainerT>*> device_voxel_map_;  // Saves combination of device id and all occupied voxels
-				std::vector<VoxelList<LeafContainerT>*> device_voxel_map_;  // Saves combination of device id and all occupied voxels
+				std::vector<VoxelList<LeafContainerT>*> device_voxel_map_;   // Saves combination of device id and all occupied voxels
 				//VoxelList* device_voxel_map = new VoxelList;
 				bool running = false;
 

@@ -39,6 +39,7 @@ set(incs
   "include/pcl/${SUBSYS_NAME}/octree_pointcloud_adjacency_container.h"
   "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud.h"
 
+  "include/pcl/${SUBSYS_NAME}/octree_list.h"
   "include/pcl/${SUBSYS_NAME}/octree_voxel_list.h"
   "include/pcl/${SUBSYS_NAME}/octree_point_list.h"
   "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud_container.h"
