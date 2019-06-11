@@ -23,6 +23,19 @@ namespace pcl {
 
 				~VoxelList() = default;
 
+				ListT*
+				find(u_int key) override {
+					OctreeListNode<ListT> *curr = this->head_;
+
+					while (curr != nullptr) {
+						if (curr->getKey() == key) {
+							return curr->getContent();
+						}
+						curr = curr->getNext();
+					}
+				}
+
+			protected:
 				/** \brief @b Octree multi-pointcloud point wrapper
 				  * \returns 	0 for success
 				  * 			1 for key already exists
@@ -46,12 +59,10 @@ namespace pcl {
 
 					if (this->head_->getKey() > node->getKey()) {
 						this->insertStart(node);
-						this->size_++;
 						return 0;
 					}
 
 					if (this->tail_->getKey() < node->getKey()) {
-						this->size_++;
 						this->insertEnd(node);
 						return 0;
 					}
@@ -62,29 +73,16 @@ namespace pcl {
 						curr_next = curr->getNext();
 						if (curr_next != nullptr && curr_next->getKey() == node->getKey())
 							return 1;
-						if (curr->getKey() < node->getKey()) {
+						if (curr->getKey() < node->getKey() && node->getKey() > curr->getNext()->getKey()) {
 							//if (curr->next_ != nullptr && node->getKey() < curr->next_->getKey()) {
-								this->insertAfter(node, curr);
-								this->size_++;
-								return 0;
+							this->insertAfter(node, curr);
+							return 0;
 							//}
 						}
 						curr = curr_next;
 					}
 
 					return 3;
-				}
-
-				ListT*
-				find(u_int key) override {
-					OctreeListNode<ListT> *curr = this->head_;
-
-					while (curr != nullptr) {
-						if (curr->getKey() == key) {
-							return curr->getContent();
-						}
-						curr = curr->getNext();
-					}
 				}
 
 		};

@@ -20,26 +20,50 @@ namespace pcl {
 		class OctreeMultiPointCloudContainer : public OctreeContainerBase {
 
 		public:
+			static int constructed, destructed, reused;
 			/** \brief Class initialization. */
 			OctreeMultiPointCloudContainer () {
+				OctreeMultiPointCloudContainer::constructed++;
 				//std::cout << "OctreeMultiPointCloudContainer CONstructor called!" << std::endl;
 				this->reset();
 				//this->point_map_ = new std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>();
-				this->point_map_ = new std::vector<PointList<OctreeMultiPointCloudPointWrapper<PointT>>*>();
+				if (this->point_map_ == nullptr)
+					this->point_map_ = new std::vector<PointList<OctreeMultiPointCloudPointWrapper<PointT>>*>();
 
 			}
 
 			/** \brief Class deconstructor. */
 			~OctreeMultiPointCloudContainer () {
+				OctreeMultiPointCloudContainer::destructed++;
 				//std::cout << "~OctreeMultiPointCloudContainer DEstructor called!" << std::endl;
-				for (auto dev = this->point_map_->begin(), end = this->point_map_->end(); dev != end; ++dev) {
-					(*dev)->clear();
-					/*for (auto points = (*dev)->begin(), end = (*dev)->end(); points != end; ++points) {
-						if ((*points) != nullptr)
-							delete (*points);
+
+				/*
+				 * // std::vector<PointList<OctreeMultiPointCloudPointWrapper<PointT>>*>* point_map_
+				for (auto dev : this->point_map_) {
+					// OctreeMultiPointCloudPointWrapper<PointT> point
+					for (auto point : dev) {
+						delete (&point);
 					}
-					if ((*dev) != nullptr)
-						delete (*dev);*/
+					dev->clear();
+					if (dev != nullptr)
+						delete dev;
+				 * */
+
+				// std::vector<PointList<OctreeMultiPointCloudPointWrapper<PointT>>*>* point_map_
+				for (auto dev : *this->point_map_) {
+					if (dev != nullptr) {
+						// PointList<OctreeMultiPointCloudPointWrapper<PointT>>* dev
+						// OctreeMultiPointCloudPointWrapper<PointT> point
+						for (OctreeMultiPointCloudPointWrapper<PointT>* point : *dev) {
+						//for (auto point = (*dev)->begin(), end2 = (*dev)->end(); point != end2; ++point) {
+							if (point != nullptr) {
+								//std::cout << "Deleting point" << point->getPoint() << std::endl;
+								delete point;
+							}
+						}
+						dev->clear();
+						//delete dev;
+					}
 				}
 				/*if (this->point_map_ != nullptr) {
 					delete this->point_map_;
@@ -171,8 +195,8 @@ namespace pcl {
 			void
 			getWeightedCentroid (PointT& centroid_arg) const {
 				using namespace pcl::common;
-				PointT point_sum;
-				float weight_sum;
+				PointT point_sum(0,0,0);
+				float weight_sum = 0.0;
 				// std::vector<PointList<OctreeMultiPointCloudPointWrapper<PointT>>*>* point_map_  = nullptr;
 				for (auto devices = this->point_map_->begin(), devices_end = this->point_map_->end(); devices != devices_end; devices++) {
 					for (auto points = (*devices)->begin(), end = (*devices)->end(); points != end; points++) {
@@ -204,6 +228,7 @@ namespace pcl {
 			void
 			reset () override {
 				using namespace pcl::common;
+				OctreeMultiPointCloudContainer::reused++;
 
 				point_counter_ = 0;
 				//point_sum_ *= 0.0f;
@@ -215,7 +240,7 @@ namespace pcl {
 								delete (*points);
 						}
 					}
-					delete this->point_map_;
+					//delete this->point_map_;
 				}*/
 
 			}
@@ -261,6 +286,15 @@ namespace pcl {
 
 
 		};
+
+		template<typename PointT>
+		int OctreeMultiPointCloudContainer<PointT>::constructed = 0;
+
+		template<typename PointT>
+		int OctreeMultiPointCloudContainer<PointT>::destructed = 0;
+
+		template<typename PointT>
+		int OctreeMultiPointCloudContainer<PointT>::reused = 0;
 
 	}
 }

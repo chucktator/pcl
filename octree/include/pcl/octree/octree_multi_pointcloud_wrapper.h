@@ -19,21 +19,20 @@ namespace pcl {
 		{
 		public:
 			/** \brief Class initialization. */
-			OctreeMultiPointCloudPointWrapper (PointT *point) {
-				this(point, NULL, NULL);
+			explicit
+			OctreeMultiPointCloudPointWrapper (PointT *point) : point_(point), device_(nullptr), cloud_(nullptr) {
+
 			}
 
-			OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device) {
-				this(point, device, NULL);
+			OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device) : point_(point), device_(device), cloud_(nullptr) {
+
 			}
 
-			OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device, PointCloud<PointT> *cloud) {
-				this->point_ = point;
-				this->device_ = device;
-				this->cloud_ = cloud;
+			OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device, PointCloud<PointT> *cloud) : point_(point), device_(device), cloud_(cloud) {
+
 			}
 
-			/** \brief Empty class deconstructor. */
+			/** \brief Class deconstructor. */
 			~OctreeMultiPointCloudPointWrapper () {
 				this->point_ = nullptr;
 				this->device_ = nullptr;

@@ -67,10 +67,10 @@ namespace pcl {
 
 				~OctreeMultiPointCloud () {
 					std::cout << "~OctreeMultiPointCloud DEstructor called!" << std::endl;
-					for (VoxelList<LeafContainerT>* list : device_voxel_map_) {
-						if (list)
-							delete list;
-					}
+					/*for (PointList<LeafContainerT>* list : device_voxel_map_) {
+						//*****if (list)
+							//*****delete list;
+					}*/
 				}
 
 				/** \brief Calculate the resulting merged point cloud
@@ -106,6 +106,7 @@ namespace pcl {
 					// Copy PointCloud for concurrency safety
 					auto *cloud_copy = new pcl::PointCloud<PointT>();
 					pcl::copyPointCloud(*cloud, *cloud_copy);
+					//auto *cloud_copy = cloud;
 
 					// Don't allow the addition of new devices after insertion of points has begun
 					this->running = true;
@@ -115,8 +116,8 @@ namespace pcl {
 					auto start = std::chrono::steady_clock::now();
 
 					// Remove all old points for the given device first
-					//VoxelList<LeafNode> *occupied_voxels;
-					VoxelList<LeafContainerT> *occupied_voxels;
+					//PointList<LeafNode> *occupied_voxels;
+					PointList<LeafContainerT> *occupied_voxels;
 					try {
 						 occupied_voxels = this->device_voxel_map_.at(device->device_id);
 					}
@@ -128,7 +129,11 @@ namespace pcl {
 					// Iterate over voxels and
 					// 		A) register all devices, if the voxel is fresh
 					//		B) clear it of all points for this device if it isn't
-					//VoxelList<OctreeMultiPointCloudContainer<PointT>> deletable_voxels;
+					//PointList<OctreeMultiPointCloudContainer<PointT>> deletable_voxels;
+					std::cout << "###############################################################" << std::endl;
+					std::cout << "Current stats on the MPWrapper pool:" << std::endl;
+					printWrapperPoolStats();
+
 					for (auto item : *occupied_voxels) {
 						//OctreeMultiPointCloudContainer<PointT> multi_container = item->getContainer();
 						OctreeMultiPointCloudContainer<PointT>* multi_container = item;
@@ -143,8 +148,26 @@ namespace pcl {
 						}
 					}
 
+					std::cout << "----------------------------------------------------------------" << std::endl;
+					std::cout << "After clearing the pool:" << std::endl;
+					printWrapperPoolStats();
+
 					//delete occupied_voxels
+					std::cout << "###############################################################" << std::endl;
+					std::cout << "Current stats on the MPContainer pool:" << std::endl;
+					printContainerPoolStats();
+
 					occupied_voxels->clear();
+
+					std::cout << "----------------------------------------------------------------" << std::endl;
+					std::cout << "After clearing the pool:" << std::endl;
+					printContainerPoolStats();
+
+					std::cout << "Actual octree contains " << this->leaf_count_ << " at this point." << std::endl;
+					std::cout << "OctreeMultiPointCloudContainer objects:" << std::endl;
+					std::cout << OctreeMultiPointCloudContainer<PointXYZ>::constructed << " objects created." <<std::endl;
+					std::cout << OctreeMultiPointCloudContainer<PointXYZ>::destructed << " objects destroyed." <<std::endl;
+					std::cout << OctreeMultiPointCloudContainer<PointXYZ>::reused << " objects reused." <<std::endl;
 
 
 					auto end = std::chrono::steady_clock::now();
@@ -155,7 +178,7 @@ namespace pcl {
 
 					start = std::chrono::steady_clock::now();
 					// Then insert the point cloud for the given device
-					//VoxelList<OctreeMultiPointCloudContainer<PointT>> new_voxels;
+					//PointList<OctreeMultiPointCloudContainer<PointT>> new_voxels;
 					auto *points = &cloud_copy->points;
 					for (int i=0; i<points->size(); i++) {
 						PointT point = points->at(i);
@@ -181,7 +204,7 @@ namespace pcl {
 					current_point_clouds_[device->device_id] = cloud_copy;
 
 					// Delete now empty voxels
-					//VoxelList<OctreeMultiPointCloudContainer<PointT>> deletable_voxels;
+					//PointList<OctreeMultiPointCloudContainer<PointT>> deletable_voxels;
 
 					/*for (auto item : *occupied_voxels) {
 						if (item->getContainer().addedSize() == 0) {
@@ -191,6 +214,22 @@ namespace pcl {
 					/*for (auto item : deletable_voxels) {
 						this->removeLeaf(item->getKey());
 					}*/
+				}
+
+				void
+				printContainerPoolStats() {
+					std::cout << OctreeListNode<LeafContainerT>::free_size << " objects free" << std::endl;
+					std::cout << OctreeListNode<LeafContainerT>::used_size << " objects used" << std::endl;
+					std::cout << OctreeListNode<LeafContainerT>::requested_objects << " objects requested thus far" << std::endl;
+					std::cout << OctreeListNode<LeafContainerT>::returned_objects << " objects returned thus far" << std::endl;
+				}
+
+				void
+				printWrapperPoolStats() {
+					std::cout << OctreeListNode<OctreeMultiPointCloudPointWrapper<PointT>>::free_size << " objects free" << std::endl;
+					std::cout << OctreeListNode<OctreeMultiPointCloudPointWrapper<PointT>>::used_size << " objects used" << std::endl;
+					std::cout << OctreeListNode<OctreeMultiPointCloudPointWrapper<PointT>>::requested_objects << " objects requested thus far" << std::endl;
+					std::cout << OctreeListNode<OctreeMultiPointCloudPointWrapper<PointT>>::returned_objects << " objects returned thus far" << std::endl;
 				}
 
 				/** \brief Add DataT object to leaf node at octree key.
@@ -211,9 +250,11 @@ namespace pcl {
 						bool ret = registered_devices_.insert(device).second;
 						if (ret) {
 							//device_voxel_map_.insert(std::pair<int, std::set<LeafContainerT*>*>(device->device_id, new std::set<LeafContainerT*>()));
-							//device_voxel_map_.insert(device_voxel_map_.end(), new VoxelList<LeafNode>());
-							device_voxel_map_.insert(device_voxel_map_.end(), new VoxelList<LeafContainerT>());
+							//device_voxel_map_.insert(device_voxel_map_.end(), new PointList<LeafNode>());
+							device_voxel_map_.insert(device_voxel_map_.end(), new PointList<LeafContainerT>());
 							current_point_clouds_.insert(current_point_clouds_.end(), nullptr);
+							OctreeListNode<LeafContainerT>::reserveMemory(device->point_count*20);
+							OctreeListNode<OctreeMultiPointCloudPointWrapper<PointT>>::reserveMemory(device->point_count*2.1);
 						}
 					}
 
@@ -223,6 +264,8 @@ namespace pcl {
 					}*/
 					return false;
 				}
+
+				int added_points;
 
 				/** \brief Add new point to octree.
 				  * \param[in] new_point the new point to add
@@ -254,6 +297,7 @@ namespace pcl {
 					auto temp = device_voxel_map_.at(new_point->getDevice()->device_id);
 					//temp->insert(reinterpret_cast<LeafContainerT*>(&(*leaf_node)));
 					temp->insert(container);
+					added_points++;
 					//return reinterpret_cast<std::uintptr_t>(container);
 					return container;
 
@@ -308,9 +352,9 @@ namespace pcl {
 				std::set<SCDevice*> registered_devices_;  // Saves list of all currently registered devices
 				std::vector<PointCloud<PointT>*> current_point_clouds_;
 				//std::map<int, std::set<LeafContainerT*>*> device_voxel_map_;  // Saves combination of device id and all occupied voxels
-				//std::vector<VoxelList<LeafContainerT>*> device_voxel_map_;  // Saves combination of device id and all occupied voxels
-				std::vector<VoxelList<LeafContainerT>*> device_voxel_map_;   // Saves combination of device id and all occupied voxels
-				//VoxelList* device_voxel_map = new VoxelList;
+				//std::vector<PointList<LeafContainerT>*> device_voxel_map_;  // Saves combination of device id and all occupied voxels
+				std::vector<PointList<LeafContainerT>*> device_voxel_map_;   // Saves combination of device id and all occupied voxels
+				//PointList* device_voxel_map = new PointList;
 				bool running = false;
 
 
