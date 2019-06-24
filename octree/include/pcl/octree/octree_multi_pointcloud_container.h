@@ -20,7 +20,7 @@ namespace pcl {
 		class OctreeMultiPointCloudContainer : public OctreeContainerBase {
 
 		public:
-			static int constructed, destructed, reused;
+			static uint64_t constructed, destructed, reused;
 			/** \brief Class initialization. */
 			OctreeMultiPointCloudContainer () {
 				OctreeMultiPointCloudContainer::constructed++;
@@ -288,13 +288,13 @@ namespace pcl {
 		};
 
 		template<typename PointT>
-		int OctreeMultiPointCloudContainer<PointT>::constructed = 0;
+		uint64_t OctreeMultiPointCloudContainer<PointT>::constructed = 0;
 
 		template<typename PointT>
-		int OctreeMultiPointCloudContainer<PointT>::destructed = 0;
+		uint64_t OctreeMultiPointCloudContainer<PointT>::destructed = 0;
 
 		template<typename PointT>
-		int OctreeMultiPointCloudContainer<PointT>::reused = 0;
+		uint64_t OctreeMultiPointCloudContainer<PointT>::reused = 0;
 
 	}
 }
