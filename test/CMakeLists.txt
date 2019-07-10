@@ -13,7 +13,7 @@ endif()
 find_package(GTestSource REQUIRED)
 include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GTEST_SRC_DIR})
 
-add_library(pcl_gtest STATIC ${GTEST_SRC_DIR}/src/gtest-all.cc ../octree/include/pcl/octree/octree_memory_list.h)
+add_library(pcl_gtest STATIC ${GTEST_SRC_DIR}/src/gtest-all.cc ../octree/include/pcl/octree/octree_memory_list.h ../octree/include/pcl/octree/octree_poolable_object.h)
 
 enable_testing()
 add_custom_target(tests "${CMAKE_CTEST_COMMAND}" "-V" VERBATIM)

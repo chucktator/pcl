@@ -54,14 +54,18 @@ namespace pcl {
 					if (dev != nullptr) {
 						// PointList<OctreeMultiPointCloudPointWrapper<PointT>>* dev
 						// OctreeMultiPointCloudPointWrapper<PointT> point
-						for (OctreeMultiPointCloudPointWrapper<PointT>* point : *dev) {
+						/*for (OctreeMultiPointCloudPointWrapper<PointT>* point : *dev) {
 						//for (auto point = (*dev)->begin(), end2 = (*dev)->end(); point != end2; ++point) {
 							if (point != nullptr) {
 								//std::cout << "Deleting point" << point->getPoint() << std::endl;
 								delete point;
 							}
-						}
-						dev->clear();
+						}*/
+						#ifndef OCTREE_MULTI_POINTCLOUD_WRAPPER_POOLING
+							dev->clear([](OctreeMultiPointCloudPointWrapper<PointT> *wrapper) { delete wrapper; });
+						#else
+							dev->clear([](OctreeMultiPointCloudPointWrapper<PointT> *wrapper) { OctreeMultiPointCloudPointWrapper<PointT>::returnUsedObject(wrapper); });
+						#endif
 						//delete dev;
 					}
 				}
@@ -142,11 +146,44 @@ namespace pcl {
 				}
 			}
 
+			/** \brief Add new point to voxel.
+			  * \param[in] new_point the new point to add
+			  */
+			void
+			addPoint (OctreeMultiPointCloudPointWrapper<PointT> *new_point, OctreeListNodePool<OctreeMultiPointCloudPointWrapper<PointT>> &olnp, int poolSegment) {
+				virgin_ = false;
+				using namespace pcl::common;
+
+				//point_sum_ += *(new_point->getPoint());
+
+				//if (!this->point_map_->empty()) {
+				//	this->point_map_->find(new_point->getDevice()->device_id)->second->push_back(new_point);
+				//}
+				try {
+					auto device_vector = this->point_map_->at(new_point->getDevice()->device_id);
+					//device_vector->insert(device_vector->end(), new_point);
+					#ifndef OCTREE_MULTI_POINTCLOUD_LISTNODE_POOLING
+						device_vector->insert(new_point);
+					#else
+						device_vector->insert(new_point, olnp, poolSegment);
+					#endif
+					point_counter_++;
+				}
+				catch (const std::out_of_range& oor) {
+					std::cerr << "Out of Range error: " << oor.what() << '\n';
+				}
+			}
+
 			void
 			clearPointsForDevice(SCDevice* device) {
 				PointList<OctreeMultiPointCloudPointWrapper<PointT>> *list = this->point_map_->at(device->device_id);
 				//uint64_t  size = list->size();
-				list->clear();
+				#ifndef OCTREE_MULTI_POINTCLOUD_WRAPPER_POOLING
+					list->clear([](OctreeMultiPointCloudPointWrapper<PointT> *wrapper) { delete wrapper; });
+				#else
+					list->clear([](OctreeMultiPointCloudPointWrapper<PointT> *wrapper) { OctreeMultiPointCloudPointWrapper<PointT>::returnUsedObject(wrapper); });
+				#endif
+				//list->clear();
 				//this->point_counter_ -= this->addedSize();
 				//if (this->point_map_ && !this->point_map_->empty()) {
 				//typename std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT> *> *>::iterator ret = this->point_map_->find(
@@ -170,6 +207,18 @@ namespace pcl {
 					std::cerr << "Out of Range error: " << oor.what() << '\n';
 				}*/
 			}
+
+			void
+			clearPointsForDevice(SCDevice* device, OctreeListNodePool<OctreeMultiPointCloudPointWrapper<PointT>> &olnp) {
+				PointList<OctreeMultiPointCloudPointWrapper<PointT>> *list = this->point_map_->at(device->device_id);
+				//uint64_t  size = list->size();
+				#ifndef OCTREE_MULTI_POINTCLOUD_WRAPPER_POOLING
+					list->clear([](OctreeMultiPointCloudPointWrapper<PointT> *wrapper) { delete wrapper; });
+				#else
+					list->clear(olnp);
+				#endif
+			}
+
 
 			/** \brief Calculate centroid of voxel.
 			  * \param[out] centroid_arg the resultant centroid of the voxel

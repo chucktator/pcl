@@ -48,6 +48,8 @@
 
 #include "octree_container.h"
 
+#include <mutex>
+
 namespace pcl
 {
   namespace octree
@@ -383,6 +385,8 @@ namespace pcl
         {
           return &container_;
         }
+
+        std::mutex branchLock;
 
       protected:
         OctreeNode* child_node_array_[8];

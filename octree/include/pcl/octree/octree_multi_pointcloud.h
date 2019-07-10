@@ -15,6 +15,7 @@
 #include <pcl/octree/octree_multi_pointcloud_container.h>
 #include <pcl/octree/octree_multi_pointcloud_wrapper.h>
 #include <pcl/octree/octree_multi_pointcloud_device.h>
+#include <pcl/octree/octree_multi_pointcloud_branch_container.h>
 
 
 
@@ -29,9 +30,48 @@
 #include <type_traits>  // remove_cv
 #include <utility>      // swap
 
+#include <thread>
+
+// Thread pool
+#include <memory>
+#include <boost/asio.hpp>
+#include <boost/thread.hpp>
+
+int num_hw_threads = std::thread::hardware_concurrency() / 2;
+
+
+#define OCTREE_MULTI_POINTCLOUD_LISTNODE_POOLING
+
+
 namespace pcl {
 	namespace octree {
 
+		struct OctreeThreadPool {
+			typedef std::unique_ptr<boost::asio::io_service::work> asio_worker;
+
+			OctreeThreadPool(int threads) :service(), service_worker(new asio_worker::element_type(service)) {
+				for (int i = 0; i < threads; ++i) {
+					auto worker = [this] { return service.run(); };
+					grp.add_thread(new boost::thread(worker));
+				}
+			}
+
+			template<class F>
+			void enqueue(F f) {
+				service.post(f);
+			}
+
+			~OctreeThreadPool() {
+				service_worker.reset();
+				grp.join_all();
+				service.stop();
+			}
+
+		private:
+			boost::asio::io_service service;
+			asio_worker service_worker;
+			boost::thread_group grp;
+		};
 
 
 
@@ -46,7 +86,8 @@ namespace pcl {
 		  */
 		template<typename PointT,
 				typename LeafContainerT = OctreeMultiPointCloudContainer<PointT> ,
-				typename BranchContainerT = OctreeContainerEmpty >
+				//typename BranchContainerT = OctreeContainerEmpty >
+				typename BranchContainerT = OctreeMultiPointCloudBranchContainer>
 		class OctreeMultiPointCloud : public OctreePointCloud<PointT, LeafContainerT, BranchContainerT> {
 			public:
 				typedef boost::shared_ptr<OctreeMultiPointCloud<PointT, LeafContainerT> > Ptr;
@@ -60,17 +101,18 @@ namespace pcl {
 				  * \param[in] resolution_arg octree resolution at lowest octree level
 				  */
 				OctreeMultiPointCloud (const double resolution_arg) :
-						OctreePointCloud<PointT, LeafContainerT, BranchContainerT> (resolution_arg) {
+						OctreePointCloud<PointT, LeafContainerT, BranchContainerT> (resolution_arg), olnp(num_hw_threads), olnp_container(num_hw_threads) {
+					#ifdef OCTREE_MULTI_POINTCLOUD_THREADING
+						std::cout << "Working with " << num_hw_threads << " processing threads." << std::endl;
+
+					#endif
 				}
 
 				/** \brief Empty class deconstructor. */
 
 				~OctreeMultiPointCloud () {
 					std::cout << "~OctreeMultiPointCloud DEstructor called!" << std::endl;
-					/*for (PointList<LeafContainerT>* list : device_voxel_map_) {
-						//*****if (list)
-							//*****delete list;
-					}*/
+
 				}
 
 				/** \brief Calculate the resulting merged point cloud
@@ -83,9 +125,9 @@ namespace pcl {
 					result_out.clear();
 					for (auto leaves = this->leaf_breadth_begin(), leaves_end = this->leaf_breadth_end(); leaves != leaves_end; ++leaves) {
 						PointT temp;
-						auto leaf = ((LeafNode*)(*leaves))->getContainer();
+						auto leaf = ((LeafNode*)(*leaves))->getContainerPtr();
 						//if (leaf.addedSize() != 0) {
-							leaf.getWeightedCentroid(temp);
+							leaf->getWeightedCentroid(temp);
 							if (isnan(temp.x) || isnan(temp.y) || isnan(temp.z)) {
 								continue;
 							}
@@ -95,6 +137,8 @@ namespace pcl {
 					}
 					return this->leaf_count_;
 				}
+
+				std::mutex octree_lock;
 
 				/** \brief Add new point cloud to voxel.
 				  * \param[in] device the device for which the new point cloud is added
@@ -130,9 +174,11 @@ namespace pcl {
 					// 		A) register all devices, if the voxel is fresh
 					//		B) clear it of all points for this device if it isn't
 					//PointList<OctreeMultiPointCloudContainer<PointT>> deletable_voxels;
-					std::cout << "###############################################################" << std::endl;
-					std::cout << "Current stats on the MPWrapper pool:" << std::endl;
-					printWrapperPoolStats();
+					#ifdef OCTREE_MULTI_POINTCLOUD_POOL_STATISTICS
+						std::cout << "###############################################################" << std::endl;
+						std::cout << "Current stats on the MPWrapper pool:" << std::endl;
+						printWrapperPoolStats();
+					#endif
 
 					for (auto item : *occupied_voxels) {
 						//OctreeMultiPointCloudContainer<PointT> multi_container = item->getContainer();
@@ -148,26 +194,36 @@ namespace pcl {
 						}
 					}
 
-					std::cout << "----------------------------------------------------------------" << std::endl;
-					std::cout << "After clearing the pool:" << std::endl;
-					printWrapperPoolStats();
+					#ifdef OCTREE_MULTI_POINTCLOUD_POOL_STATISTICS
+						std::cout << "----------------------------------------------------------------" << std::endl;
+						std::cout << "After clearing the pool:" << std::endl;
+						printWrapperPoolStats();
 
-					//delete occupied_voxels
-					std::cout << "###############################################################" << std::endl;
-					std::cout << "Current stats on the MPContainer pool:" << std::endl;
-					printContainerPoolStats();
+						//delete occupied_voxels
+						std::cout << "###############################################################" << std::endl;
+						std::cout << "Current stats on the MPContainer pool:" << std::endl;
+						printContainerPoolStats();
+					#endif
 
-					occupied_voxels->clear();
+					//octree_lock.lock();
+					#ifndef OCTREE_MULTI_POINTCLOUD_THREADING
+						occupied_voxels->clear();
+					#else
+						occupied_voxels->clear(olnp_container);
+					#endif
+					//octree_lock.unlock();
 
-					std::cout << "----------------------------------------------------------------" << std::endl;
-					std::cout << "After clearing the pool:" << std::endl;
-					printContainerPoolStats();
+					#ifdef OCTREE_MULTI_POINTCLOUD_POOL_STATISTICS
+						std::cout << "----------------------------------------------------------------" << std::endl;
+						std::cout << "After clearing the pool:" << std::endl;
+						printContainerPoolStats();
 
-					std::cout << "Actual octree contains " << this->leaf_count_ << " at this point." << std::endl;
-					std::cout << "OctreeMultiPointCloudContainer objects:" << std::endl;
-					std::cout << OctreeMultiPointCloudContainer<PointXYZ>::constructed << " objects created." <<std::endl;
-					std::cout << OctreeMultiPointCloudContainer<PointXYZ>::destructed << " objects destroyed." <<std::endl;
-					std::cout << OctreeMultiPointCloudContainer<PointXYZ>::reused << " objects reused." <<std::endl;
+						std::cout << "Actual octree contains " << this->leaf_count_ << " at this point." << std::endl;
+						std::cout << "OctreeMultiPointCloudContainer objects:" << std::endl;
+						std::cout << OctreeMultiPointCloudContainer<PointXYZ>::constructed << " objects created." <<std::endl;
+						std::cout << OctreeMultiPointCloudContainer<PointXYZ>::destructed << " objects destroyed." <<std::endl;
+						std::cout << OctreeMultiPointCloudContainer<PointXYZ>::reused << " objects reused." <<std::endl;
+					#endif
 
 
 					auto end = std::chrono::steady_clock::now();
@@ -180,16 +236,65 @@ namespace pcl {
 					// Then insert the point cloud for the given device
 					//PointList<OctreeMultiPointCloudContainer<PointT>> new_voxels;
 					auto *points = &cloud_copy->points;
-					for (int i=0; i<points->size(); i++) {
-						PointT point = points->at(i);
-						if (isnan(point.x) || isnan(point.y) || isnan(point.z)) {
-							continue;
+
+					#ifndef OCTREE_MULTI_POINTCLOUD_THREADING
+						for (int i = 0; i < points->size(); i++) {
+							PointT point = points->at(i);
+							if (isnan(point.x) || isnan(point.y) || isnan(point.z)) {
+								continue;
+							}
+							#ifndef OCTREE_MULTI_POINTCLOUD_WRAPPER_POOLING
+								auto new_point = new OctreeMultiPointCloudPointWrapper<PointT>();
+							#else
+								auto new_point = OctreeMultiPointCloudPointWrapper<PointT>::getFreeObject();
+							#endif
+							new_point->init(&(points->at(i)), device, cloud_copy);
+							LeafContainerT *voxel = this->addPoint(new_point);
+							//new_voxels.insert(voxel);
+							//deletable_voxels.remove(voxel);
 						}
-						auto new_point = new OctreeMultiPointCloudPointWrapper<PointT>(&(points->at(i)), device, cloud);
-						LeafContainerT *voxel = this->addPoint(new_point);
-						//new_voxels.insert(voxel);
-						//deletable_voxels.remove(voxel);
-					}
+					#else
+						//std::vector<std::thread> workers;
+						int segment = points->size() / num_hw_threads;
+						int finished_threads = 0;
+						for (int i=0; i < num_hw_threads; i++) {
+							int thread_start = i * segment;
+							int thread_end;
+							if (i == num_hw_threads - 1) {
+								thread_end = points->size();
+							} else {
+								thread_end = (i + 1) * segment;
+							}
+							// TODO Extend to end in last segment
+							//workers.push_back(std::thread([thread_start, thread_end, &points, device, cloud_copy, this]() {
+							otp.enqueue([i, thread_start, thread_end, &points, &device, &cloud_copy, &finished_threads, this]() {
+
+								for (int p = thread_start; p < thread_end; p++) {
+									PointT point = points->at(p);
+									if (isnan(point.x) || isnan(point.y) || isnan(point.z)) {
+										continue;
+									}
+									#ifndef OCTREE_MULTI_POINTCLOUD_WRAPPER_POOLING
+										auto new_point = new OctreeMultiPointCloudPointWrapper<PointT>();
+									#else
+										auto new_point = OctreeMultiPointCloudPointWrapper<PointT>::getFreeObject();
+									#endif
+									new_point->init(&(points->at(p)), device, cloud_copy);
+									LeafContainerT *voxel = this->addPoint(new_point, i);
+									//new_voxels.insert(voxel);
+									//deletable_voxels.remove(voxel);
+								}
+								finished_threads++;
+							});
+						}
+						while (finished_threads < num_hw_threads) {
+							usleep(20);
+						}
+						/*std::for_each(workers.begin(), workers.end(), [](std::thread &t) {
+							t.join();
+						});*/
+
+					#endif
 					end = std::chrono::steady_clock::now();
 					std::cout << "Inserting new points took "
 							  << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
@@ -253,8 +358,23 @@ namespace pcl {
 							//device_voxel_map_.insert(device_voxel_map_.end(), new PointList<LeafNode>());
 							device_voxel_map_.insert(device_voxel_map_.end(), new PointList<LeafContainerT>());
 							current_point_clouds_.insert(current_point_clouds_.end(), nullptr);
-							OctreeListNode<LeafContainerT>::reserveMemory(device->point_count*20);
-							OctreeListNode<OctreeMultiPointCloudPointWrapper<PointT>>::reserveMemory(device->point_count*2.1);
+
+							#ifdef OCTREE_MULTI_POINTCLOUD_WRAPPER_POOLING
+								OctreeMultiPointCloudPointWrapper<PointT>::reserveMemory(device->point_count * 1.1);
+								//auto test = new OctreeObjectPool<OctreeMultiPointCloudPointWrapper<PointT>>();
+							#endif
+
+							// ListNode threadable pools
+							#ifdef OCTREE_MULTI_POINTCLOUD_THREADING
+								olnp.reserveMemory(device->point_count * 2.1, num_hw_threads);
+								olnp_container.reserveMemory(device->point_count * 2.1, num_hw_threads);
+							#endif
+
+							// ListNode pools
+							#ifdef OCTREE_MULTI_POINTCLOUD_LISTNODE_POOLING
+								OctreeListNode<LeafContainerT>::reserveMemory(device->point_count * 2);
+								OctreeListNode<OctreeMultiPointCloudPointWrapper<PointT>>::reserveMemory(device->point_count * 2.1);
+							#endif
 						}
 					}
 
@@ -272,32 +392,65 @@ namespace pcl {
 				  * \return Pointer to the Voxel into which the point was inserted.
 				  */
 				LeafContainerT*
-				addPoint (OctreeMultiPointCloudPointWrapper<PointT>* const& new_point) {
+				addPoint (OctreeMultiPointCloudPointWrapper<PointT>* const& new_point, int poolSegment = 0) {
 					this->running = true;
 
 					OctreeKey key;
 
+					#ifdef OCTREE_MULTI_POINTCLOUD_LOCK_BOUNDING_BOX
+						octree_lock.lock();
+					#endif
 					// make sure bounding box is big enough
 					this->adoptBoundingBoxToPoint (*(new_point->getPoint()));
+					#ifdef OCTREE_MULTI_POINTCLOUD_LOCK_BOUNDING_BOX
+						octree_lock.unlock();
+					#endif
 
 					// generate key
+					#ifdef OCTREE_MULTI_POINTCLOUD_LOCK_GEN_OCTREE_KEY
+						octree_lock.lock();
+					#endif
 					this->genOctreeKeyforPoint (*(new_point->getPoint()), key);
+					#ifdef OCTREE_MULTI_POINTCLOUD_LOCK_GEN_OCTREE_KEY
+						octree_lock.unlock();
+					#endif
 
-					LeafContainerT* container = this->findLeaf(key);
-					if (container == nullptr) {
+
+
+					//LeafContainerT* container = this->findLeaf(key);
+					//octree_lock.lock();
+					LeafContainerT* container = this->createLeaf(key);
+					//if (container == nullptr) {
 						// add point to octree at key
-						container = this->createLeaf(key);
-					}
+						//container = this->createLeaf(key);
+					//}
 
 					if (container->isVirgin())
 						container->registerDevices(&registered_devices_);
-					container->addPoint(new_point);
+					#ifndef OCTREE_MULTI_POINTCLOUD_THREADING
+						container->addPoint(new_point);
+					#else
+						container->addPoint(new_point, olnp, poolSegment);
+					#endif
 					container->setKey(key);
 
 					auto temp = device_voxel_map_.at(new_point->getDevice()->device_id);
 					//temp->insert(reinterpret_cast<LeafContainerT*>(&(*leaf_node)));
-					temp->insert(container);
+					#ifdef OCTREE_MULTI_POINTCLOUD_LOCK_INSERT
+						octree_lock.lock();
+					#endif
+
+					#ifndef OCTREE_MULTI_POINTCLOUD_THREADING
+						temp->insert(container);
+					#else
+						temp->insert(container, olnp_container, poolSegment);
+					#endif
+
+					#ifdef OCTREE_MULTI_POINTCLOUD_LOCK_INSERT
+						octree_lock.unlock();
+					#endif
 					added_points++;
+
 					//return reinterpret_cast<std::uintptr_t>(container);
 					return container;
 
@@ -357,6 +510,9 @@ namespace pcl {
 				//PointList* device_voxel_map = new PointList;
 				bool running = false;
 
+				OctreeThreadPool otp{num_hw_threads};
+				OctreeListNodePool<OctreeMultiPointCloudPointWrapper<PointT>> olnp;
+				OctreeListNodePool<LeafContainerT> olnp_container;
 
 		};
 	}

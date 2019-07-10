@@ -6,6 +6,8 @@
 #define PCL_OCTREE_MULTI_POINTCLOUD_WRAPPER_H
 
 #include <pcl/octree/octree_multi_pointcloud_device.h>
+#include <pcl/octree/octree_object_pool.h>
+#include <pcl/octree/octree_poolable_object.h>
 
 namespace pcl {
 	namespace octree {
@@ -15,53 +17,66 @@ namespace pcl {
 		  * \author Alexander Poeppel (poeppel@isse.de)
 		  */
 		template<typename PointT>
-		class OctreeMultiPointCloudPointWrapper
-		{
-		public:
-			/** \brief Class initialization. */
-			explicit
-			OctreeMultiPointCloudPointWrapper (PointT *point) : point_(point), device_(nullptr), cloud_(nullptr) {
+		class OctreeMultiPointCloudPointWrapper : public OctreePoolableObject<OctreeMultiPointCloudPointWrapper<PointT>> {
+			public:
 
-			}
+				/** \brief Class initialization. */
+				OctreeMultiPointCloudPointWrapper() = default;
 
-			OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device) : point_(point), device_(device), cloud_(nullptr) {
+				void
+				init(PointT *point) {
+					init(point, nullptr, nullptr);
+				}
 
-			}
+				void
+				init(PointT *point, SCDevice *device) {
+					init(point, device, nullptr);
+				}
 
-			OctreeMultiPointCloudPointWrapper (PointT *point, SCDevice *device, PointCloud<PointT> *cloud) : point_(point), device_(device), cloud_(cloud) {
+				void
+				init(PointT *point, SCDevice *device, PointCloud<PointT> *cloud) {
+					this->point_ = point;
+					this->device_ = device;
+					this->cloud_ = cloud;
+				}
 
-			}
+				/** \brief Class deconstructor. */
+				~OctreeMultiPointCloudPointWrapper () {
+					this->reset();
+				}
 
-			/** \brief Class deconstructor. */
-			~OctreeMultiPointCloudPointWrapper () {
-				this->point_ = nullptr;
-				this->device_ = nullptr;
-				this->cloud_ = nullptr;
-			}
-
-
-			SCDevice*
-			getDevice() {
-				return this->device_;
-			}
-
-			PointT*
-			getPoint() {
-				return this->point_;
-			}
-
-			PointCloud<PointT>*
-			getPointCloud() {
-				return this->cloud_;
-			}
+				virtual
+				void
+				reset() override {
+					this->point_ = nullptr;
+					this->device_ = nullptr;
+					this->cloud_ = nullptr;
+				}
 
 
+				SCDevice*
+				getDevice() {
+					return this->device_;
+				}
+
+				PointT*
+				getPoint() {
+					return this->point_;
+				}
+
+				PointCloud<PointT>*
+				getPointCloud() {
+					return this->cloud_;
+				}
 
 
-		private:
-			SCDevice *device_;
-			PointT *point_;
-			PointCloud<PointT> *cloud_;
+
+
+			private:
+				SCDevice *device_ = nullptr;
+				PointT *point_ = nullptr;
+				PointCloud<PointT> *cloud_ = nullptr;
+
 		};
 
 	}

@@ -299,8 +299,10 @@ namespace pcl
         {
           if ((!dynamic_depth_enabled_) && (depth_mask_arg > 1))
           {
+          	branch_arg->branchLock.lock();
             // if required branch does not exist -> create it
             BranchNode* childBranch = createBranchChild (*branch_arg, child_idx);
+            branch_arg->branchLock.unlock();
 
             branch_count_++;
 
@@ -310,8 +312,10 @@ namespace pcl
           }
           else
           {
+          	branch_arg->branchLock.lock();
             // if leaf node at child_idx does not exist
             LeafNode* leaf_node = createLeafChild (*branch_arg, child_idx);
+            branch_arg->branchLock.unlock();
             return_leaf_arg = leaf_node;
             parent_of_leaf_arg = branch_arg;
             this->leaf_count_++;
