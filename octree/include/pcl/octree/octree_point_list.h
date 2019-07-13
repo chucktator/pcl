@@ -20,6 +20,10 @@ namespace pcl {
 
 				}
 
+				PointList(int segments) : OctreeList<PointT>(segments) {
+
+				}
+
 				~PointList() = default;
 
 		};

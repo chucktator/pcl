@@ -6,508 +6,14 @@
 #define PCL_OCTREE_LIST_H
 
 #include <mutex>
+#include <pcl/octree/octree_list_node.h>
+#include <pcl/octree/octree_list_node_pool.h>
 
 namespace pcl {
 	namespace octree {
 
 		template<typename T>
 		class OctreeObjectPool;
-
-		template <typename NodeTypeT>
-		class OctreeListNodePool;
-
-		template<typename ContentT>
-		class OctreeListNode {
-			friend class OctreeListNodePool<ContentT>;
-
-			public:
-
-				inline
-				void
-				init(u_int key, ContentT *content) {
-					this->key_ = key;
-					this->content_ = content;
-
-				}
-
-				inline
-				void
-				reset() {
-					this->resetContent();
-					this->resetPointers();
-				}
-
-				inline
-				void
-				resetPointers() {
-					this->resetListPointers();
-					this->resetMemPointers();
-				}
-
-				inline
-				void
-				resetMemPointers() {
-					this->mem_next_ = nullptr;
-					this->mem_prev_ = nullptr;
-				}
-
-				inline
-				void
-				resetListPointers() {
-					this->next_ = nullptr;
-					this->prev_ = nullptr;
-				}
-
-				inline
-				void
-				resetContent() {
-					this->key_ = 666;
-					this->content_ = nullptr;
-					this->in_use = false;
-				}
-
-				inline
-				u_int
-				getKey() {
-					return this->key_;
-				}
-
-				inline
-				ContentT*
-				getContent() {
-					return this->content_;
-				}
-
-				inline
-				OctreeListNode<ContentT>*
-				getNext() {
-					return this->next_;
-				}
-
-				inline
-				void
-				setNext(OctreeListNode<ContentT>* next) {
-					this->next_ = next;
-				}
-
-				inline
-				OctreeListNode<ContentT>*
-				getPrev() {
-					return this->prev_;
-				}
-
-				inline
-				void
-				setPrev(OctreeListNode<ContentT>* prev) {
-					this->prev_ = prev;
-				}
-
-				static
-				void
-				reserveMemory(uint64_t size) {
-					OctreeListNode<ContentT> *temp = (OctreeListNode<ContentT> *) std::malloc(size * sizeof(OctreeListNode<ContentT>));
-					malloc_pointers_.push_back(temp);
-					for (int i=0; i<size; i++) {
-						OctreeListNode<ContentT> *node = new (temp++) OctreeListNode<ContentT>();
-						OctreeListNode<ContentT>::memPush(OctreeListNode<ContentT>::free_head_,
-														  OctreeListNode<ContentT>::free_tail_,
-														  OctreeListNode<ContentT>::free_size,
-														  OctreeListNode<ContentT>::free_lock_, node);
- 						//std::cout << "Created new OctreeListNode at 0x" <<  reinterpret_cast<std::uintptr_t>(node) << " placed in memory at 0x" << reinterpret_cast<std::uintptr_t>(temp) << std::endl;
-					}
-					OctreeListNode<ContentT>::capacity += size;
-				}
-
-				static
-				void
-				freeMemory() {
-
-				}
-
-				static
-				OctreeListNode<ContentT>*
-				getFreeNode() {
-					requested_objects++;
-					OctreeListNode<ContentT> *temp = OctreeListNode<ContentT>::memPop(
-							OctreeListNode<ContentT>::free_head_, OctreeListNode<ContentT>::free_tail_,
-							OctreeListNode<ContentT>::free_size, OctreeListNode<ContentT>::free_lock_);
-					if (temp != nullptr) {
-						OctreeListNode<ContentT>::memPush(OctreeListNode<ContentT>::used_head_,
-														  OctreeListNode<ContentT>::used_tail_,
-														  OctreeListNode<ContentT>::used_size,
-														  OctreeListNode<ContentT>::used_lock_,temp);
-						temp->in_use = true;
-					}
-					return temp;
-				}
-
-				static
-				void
-				returnUsedNode(OctreeListNode<ContentT> *node) {
-					returned_objects++;
-					node->recycled = true;
-					if (OctreeListNode<ContentT>::memPunch(OctreeListNode<ContentT>::used_head_,
-														   OctreeListNode<ContentT>::used_tail_,
-														   OctreeListNode<ContentT>::used_size,
-														   OctreeListNode<ContentT>::used_lock_, node)) {
-						OctreeListNode<ContentT>::memPush(OctreeListNode<ContentT>::free_head_,
-														  OctreeListNode<ContentT>::free_tail_,
-														  OctreeListNode<ContentT>::free_size,
-														  OctreeListNode<ContentT>::free_lock_,node);
-					}
-				}
-
-				static int used_size, free_size, capacity;
-				static int requested_objects, returned_objects;
-
-				explicit
-				OctreeListNode() = default;
-
-				~OctreeListNode() = default;
-
-			protected:
-
-
-				static
-				bool
-				memPush(OctreeListNode<ContentT> *&head, OctreeListNode<ContentT> *&tail, int &size, std::mutex &lock,
-						OctreeListNode<ContentT> *node) {
-
-
-					if (node == nullptr)
-						return false;
-
-					lock.lock();
-					if (head == nullptr && tail == nullptr) {
-						head = node;
-						tail = node;
-						size++;
-						lock.unlock();
-						return true;
-					}
-					/*if (tail == nullptr) {
-						OctreeListNode<ContentT> *temp = head;
-						head = node;
-						if (temp != nullptr) {
-							node->mem_next_ = temp;
-						}
-						size++;
-						return true;
-					}*/
-					tail->mem_next_ = node;
-					node->mem_prev_ = tail;
-					tail = node;
-					size++;
-
-					lock.unlock();
-
-					return true;
-				}
-
-				static
-				OctreeListNode<ContentT>*
-				memPop(OctreeListNode<ContentT> *&head, OctreeListNode<ContentT> *&tail, int &size, std::mutex &lock) {
-
-					lock.lock();
-
-					if (head == nullptr)
-						return nullptr;
-					OctreeListNode<ContentT> *temp = head;
-					if (head != tail) {
-						if (head->mem_next_ == nullptr) {
-							lock.unlock();
-							return nullptr;
-						}
-						head->mem_next_->mem_prev_ = nullptr;
-						head = head->mem_next_;
-					} else {
-						head = nullptr;
-						tail = nullptr;
-					}
-					size--;
-					temp->reset();
-
-					lock.unlock();
-
-					return temp;
-				}
-
-				static
-				bool
-				memPunch(OctreeListNode<ContentT> *&head, OctreeListNode<ContentT> *&tail, int &size, std::mutex &lock,
-						 OctreeListNode<ContentT> *node) {
-
-					if (node == nullptr)
-						return false;
-
-					lock.lock();
-
-					if (node == head) {
-						head = head->mem_next_;
-					}
-
-					if (node == tail) {
-						tail = tail->mem_prev_;
-					}
-
-
-					OctreeListNode<ContentT> *prev = node->mem_prev_, *next = node->mem_next_;
-
-					if (prev != nullptr) {
-						prev->mem_next_ = next;
-					}
-
-					if (next != nullptr) {
-						next->mem_prev_ = prev;
-					}
-
-					size--;
-
-					node->reset();
-
-					lock.unlock();
-
-					return true;
-
-					/*OctreeListNode<ContentT> *curr = head, *prev = nullptr;
-
-					while (curr != nullptr) {
-						if (curr->key_ == node->key_) {
-							if (prev == nullptr) {
-								head = head->mem_next_;
-							} else {
-								prev->mem_next_ = curr->mem_next_;
-							}
-							size--;
-							node->mem_next_ = nullptr;
-							return true;
-						}
-						prev = curr;
-						curr = curr->mem_next_;
-					}
-					return false;*/
-				}
-
-			private:
-				u_int key_ = 0;
-				ContentT *content_ = nullptr;
-				OctreeListNode *next_ = nullptr, *prev_ = nullptr;
-
-				bool in_use = false, recycled = false;
-				OctreeListNode<ContentT> *mem_next_ = nullptr, *mem_prev_ = nullptr;
-
-				static OctreeListNode<ContentT> *used_head_, *used_tail_;
-				static OctreeListNode<ContentT> *free_head_, *free_tail_;
-				static std::vector<OctreeListNode<ContentT>*> malloc_pointers_;
-
-				static std::mutex free_lock_, used_lock_;
-
-				int pool_segment_;
-		};
-
-		template<typename ContentT>
-		int OctreeListNode<ContentT>::used_size = 0;
-		template<typename ContentT>
-		int OctreeListNode<ContentT>::free_size = 0;
-		template<typename ContentT>
-		int OctreeListNode<ContentT>::capacity = 0;
-
-		template<typename ContentT>
-		int OctreeListNode<ContentT>::requested_objects = 0;
-		template<typename ContentT>
-		int OctreeListNode<ContentT>::returned_objects = 0;
-
-		template<typename ContentT>
-		OctreeListNode<ContentT>* OctreeListNode<ContentT>::used_head_ = nullptr;
-		template<typename ContentT>
-		OctreeListNode<ContentT>* OctreeListNode<ContentT>::used_tail_ = nullptr;
-		template<typename ContentT>
-		OctreeListNode<ContentT>* OctreeListNode<ContentT>::free_head_ = nullptr;
-		template<typename ContentT>
-		OctreeListNode<ContentT>* OctreeListNode<ContentT>::free_tail_ = nullptr;
-
-		template<typename ContentT>
-		std::mutex OctreeListNode<ContentT>::free_lock_;
-		template<typename ContentT>
-		std::mutex OctreeListNode<ContentT>::used_lock_;
-
-		template<typename ContentT>
-		std::vector<OctreeListNode<ContentT>*> OctreeListNode<ContentT>::malloc_pointers_ = std::vector<OctreeListNode<ContentT>*>();
-
-
-
-		template <typename NodeTypeT>
-		class OctreeListNodePool {
-
-			public:
-
-				OctreeListNodePool(int segments = 1) {
-					used_head_ = new OctreeListNode<NodeTypeT>*[segments];
-					used_tail_ = new OctreeListNode<NodeTypeT>*[segments];
-					free_head_ = new OctreeListNode<NodeTypeT>*[segments];
-					free_tail_ = new OctreeListNode<NodeTypeT>*[segments];
-
-					used_size = new int[segments];
-					free_size = new int[segments];
-					capacity = new int[segments];
-					requested_objects = new int[segments];
-					returned_objects = new int[segments];
-					for (int i=0; i<segments; i++) {
-						//this->reserveMemory((size / segments * 1.1), i);
-						used_head_[i] = nullptr;
-						used_tail_[i] = nullptr;
-						free_head_[i] = nullptr;
-						free_tail_[i] = nullptr;
-
-						used_size[i] = 0;
-						free_size [i] = 0;
-						capacity[i] = 0;
-						requested_objects[i] = 0;
-						returned_objects[i] = 0;
-					}
-				}
-
-				void reserveMemory(uint64_t totalSize, int segments = 1) {
-					for (int i=0; i<segments; i++) {
-						this->reserveMemorySegment((int) (totalSize / segments * 1.1), i);
-					}
-
-				}
-
-				void
-				freeMemory() {
-
-				}
-
-				OctreeListNode<NodeTypeT>*
-				getFreeNode(int segment = 0) {
-					requested_objects[segment]++;
-
-					OctreeListNode<NodeTypeT> *temp = this->memPop(this->free_head_[segment], this->free_tail_[segment], this->free_size[segment]);
-					if (temp != nullptr) {
-						this->memPush(this->used_head_[segment], this->used_tail_[segment], this->used_size[segment], temp);
-						temp->in_use = true;
-					}
-
-					used_size[segment]++;
-					free_size[segment]--;
-					return temp;
-				}
-
-				void
-				returnUsedNode(OctreeListNode<NodeTypeT> *node) {
-					returned_objects[node->pool_segment_]++;
-					node->recycled = true;
-					if (this->memPunch(this->used_head_[node->pool_segment_], this->used_tail_[node->pool_segment_], this->used_size[node->pool_segment_], node)) {
-						this->memPush(this->free_head_[node->pool_segment_], this->free_tail_[node->pool_segment_], this->free_size[node->pool_segment_], node);
-					}
-					used_size[node->pool_segment_]--;
-					free_size[node->pool_segment_]++;
-				}
-
-			protected:
-
-				void
-				reserveMemorySegment(uint64_t size, int segment = 0) {
-					auto *temp = (OctreeListNode<NodeTypeT> *) std::malloc(size * sizeof(OctreeListNode<NodeTypeT>));
-					this->malloc_pointers_.push_back(temp);
-					for (int i=0; i<size; i++) {
-						auto *node = new(temp++) OctreeListNode<NodeTypeT>();
-						this->memPush(this->free_head_[segment], this->free_tail_[segment], this->free_size[segment], node);
-						node->pool_segment_ = segment;
-					}
-					this->capacity[segment] += size;
-					this->totalCapacity += size;
-				}
-			
-				bool
-				memPush(OctreeListNode<NodeTypeT> *&head, OctreeListNode<NodeTypeT> *&tail, int &size, OctreeListNode<NodeTypeT> *node) {
-	
-	
-					if (node == nullptr)
-						return false;
-
-					if (head == nullptr && tail == nullptr) {
-						head = node;
-						tail = node;
-						size++;
-						return true;
-					}
-					tail->mem_next_ = node;
-					node->mem_prev_ = tail;
-					tail = node;
-					size++;
-	
-					return true;
-				}
-				
-				OctreeListNode<NodeTypeT>*
-				memPop(OctreeListNode<NodeTypeT> *&head, OctreeListNode<NodeTypeT> *&tail, int &size) {
-	
-					if (head == nullptr)
-						return nullptr;
-					OctreeListNode<NodeTypeT> *temp = head;
-					if (head != tail) {
-						if (head->mem_next_ == nullptr) {
-							return nullptr;
-						}
-						head->mem_next_->mem_prev_ = nullptr;
-						head = head->mem_next_;
-					} else {
-						head = nullptr;
-						tail = nullptr;
-					}
-					size--;
-					temp->reset();
-	
-					return temp;
-				}
-				
-				bool
-				memPunch(OctreeListNode<NodeTypeT> *&head, OctreeListNode<NodeTypeT> *&tail, int &size, OctreeListNode<NodeTypeT> *node) {
-	
-					if (node == nullptr)
-						return false;
-	
-					if (node == head) {
-						head = head->mem_next_;
-					}
-	
-					if (node == tail) {
-						tail = tail->mem_prev_;
-					}
-	
-	
-					OctreeListNode<NodeTypeT> *prev = node->mem_prev_, *next = node->mem_next_;
-	
-					if (prev != nullptr) {
-						prev->mem_next_ = next;
-					}
-	
-					if (next != nullptr) {
-						next->mem_prev_ = prev;
-					}
-	
-					size--;
-	
-					node->reset();
-	
-					return true;
-				}
-
-			private:
-				int *used_size, *free_size, *capacity, totalCapacity = 0;
-				int *requested_objects, *returned_objects;
-				std::vector<OctreeListNode<NodeTypeT>*> malloc_pointers_;
-
-				OctreeListNode<NodeTypeT> **used_head_, **used_tail_;
-				OctreeListNode<NodeTypeT> **free_head_, **free_tail_;
-
-
-		};
-
-
-
 
 
 		template<typename ListT>
@@ -519,11 +25,12 @@ namespace pcl {
 			class ForwardIterator : public std::iterator<std::forward_iterator_tag, UnqualifiedType, std::ptrdiff_t, Type*, Type&> {
 				friend class OctreeList;
 				OctreeListNode<UnqualifiedType>* itr;
+				OctreeList<UnqualifiedType>* parent;
+				int segment = 0;
 
-				explicit ForwardIterator(OctreeListNode<UnqualifiedType>* nd)
-						: itr(nd)
-				{
-				}
+				explicit ForwardIterator(OctreeListNode<UnqualifiedType>* nd, OctreeList<UnqualifiedType>* list)
+					: itr(nd), parent(list) {}
+
 
 				public:
 
@@ -541,7 +48,16 @@ namespace pcl {
 					ForwardIterator& operator++ () // Pre-increment
 					{
 						assert(itr != nullptr && "Out-of-bounds iterator increment!");
+
 						itr = itr->getNext();
+						if (itr == nullptr && this->segment < this->parent->segments_) {
+							int old_segment = this->segment++;
+							while (this->parent->heads_[this->segment] == nullptr && this->segment < this->parent->segments_-1) {
+								++this->segment;
+							}
+							std::cout << "Moving from segment " << old_segment << " to segment " << this->segment << " of " << this->parent->segments_ << std::endl;
+							itr = this->parent->heads_[this->segment];
+						}
 						return *this;
 					}
 
@@ -549,7 +65,7 @@ namespace pcl {
 					{
 						assert(itr != nullptr && "Out-of-bounds iterator increment!");
 						ForwardIterator tmp(*this);
-						itr = itr->getNext();
+						++(*this);
 						return tmp;
 					}
 
@@ -579,6 +95,7 @@ namespace pcl {
 					}
 
 					// One way conversion: iterator -> const_iterator
+					// TODO fix
 					operator ForwardIterator<const Type>() const
 					{
 						return ForwardIterator<const Type>(itr);
@@ -591,13 +108,29 @@ namespace pcl {
 
 			public:
 
-				OctreeList() {
-					this->head_ = nullptr;
-					this->tail_ = nullptr;
+				OctreeList(int segments = 1) {
+					std::cerr << "Creating OctreeList with " << segments << " segments!" << std::endl;
+					//this->head_ = nullptr;
+					//this->tail_ = nullptr;
+					this->segments_ = segments;
+
+					this->heads_ = new OctreeListNode <ListT> *[segments];
+					this->tails_ = new OctreeListNode <ListT> *[segments];
+					this->sizes_ = new uint64_t[segments];
+
+					for (int i = 0; i < segments; ++i) {
+						this->heads_[i] = nullptr;
+						this->tails_[i] = nullptr;
+
+						this->sizes_[i] = 0;
+					}
 				}
 
 				~OctreeList() {
 					//this->clear();
+					delete[] this->heads_;
+					delete[] this->tails_;
+					delete[] this->sizes_;
 				}
 
 				/** \brief @b Octree multi-pointcloud point wrapper
@@ -608,7 +141,7 @@ namespace pcl {
 				  */
 				virtual
 				uint8_t
-				insert(ListT* const& content) {
+				insert(ListT* const& content, int segment = 0) {
 					//return this->insertNode(new OctreeListNode<ListT>(reinterpret_cast<std::uintptr_t>(content), content));
 					#ifndef OCTREE_MULTI_POINTCLOUD_LISTNODE_POOLING
 						OctreeListNode<ListT> *temp = new OctreeListNode<ListT>();
@@ -616,7 +149,8 @@ namespace pcl {
 						OctreeListNode<ListT> *temp = OctreeListNode<ListT>::getFreeNode();
 					#endif
 					temp->init(reinterpret_cast<std::uintptr_t>(content), content);
-					return this->insertNode(temp);
+					//temp->setListSegment(segment);
+					return this->insertNode(temp, segment);
 				}
 
 				/** \brief @b Octree multi-pointcloud point wrapper
@@ -631,7 +165,8 @@ namespace pcl {
 					//return this->insertNode(new OctreeListNode<ListT>(reinterpret_cast<std::uintptr_t>(content), content));
 					OctreeListNode<ListT> *temp = olnp.getFreeNode(poolSegment);
 					temp->init(reinterpret_cast<std::uintptr_t>(content), content);
-					return this->insertNode(temp);
+					//temp->setListSegment(poolSegment);
+					return this->insertNode(temp, poolSegment);
 				}
 
 
@@ -676,26 +211,28 @@ namespace pcl {
 				virtual
 				void
 				clear(std::function<void(ListT*)> func = nullptr) {
-					OctreeListNode<ListT> *curr = this->head_;
-					this->head_ = nullptr;
-					this->tail_ = nullptr;
-					//std::cout << "Clearing list of " << typeid(ListT).name() << " containing " << this->size_ << " items. The memory pool contains " << OctreeListNode<ListT>::used_size << " objects" << std::endl;
-					//int returned = OctreeListNode<ListT>::returned_objects; //, used = OctreeListNode<ListT>::used_size, free = OctreeListNode<ListT>::free_size, list_size = this->size_;
+					int i = 0;
+					for (int segment=0; segment<this->segments_; ++segment) {
+						OctreeListNode<ListT> *curr = this->heads_[segment];
+						this->heads_[segment] = nullptr;
+						this->tails_[segment] = nullptr;
+						//std::cout << "Clearing list of " << typeid(ListT).name() << " containing " << this->size_ << " items. The memory pool contains " << OctreeListNode<ListT>::used_size << " objects" << std::endl;
+						//int returned = OctreeListNode<ListT>::returned_objects; //, used = OctreeListNode<ListT>::used_size, free = OctreeListNode<ListT>::free_size, list_size = this->size_;
 
-					int i=0;
-					while (curr != nullptr) {
-						OctreeListNode<ListT> *temp = curr;
-						curr = curr->getNext();
-						//delete temp->getContent();
-						if (func != nullptr) {
-							func(temp->getContent());
+						while (curr != nullptr) {
+							OctreeListNode<ListT> *temp = curr;
+							curr = curr->getNext();
+							//delete temp->getContent();
+							if (func != nullptr) {
+								func(temp->getContent());
+							}
+							#ifndef OCTREE_MULTI_POINTCLOUD_LISTNODE_POOLING
+								delete temp;
+							#else
+								OctreeListNode<ListT>::returnUsedNode(temp);
+							#endif
+							++i;
 						}
-						#ifndef OCTREE_MULTI_POINTCLOUD_LISTNODE_POOLING
-							delete temp;
-						#else
-							OctreeListNode<ListT>::returnUsedNode(temp);
-						#endif
-						i++;
 					}
 					if ((this->size_ - i) > 0)
 						std::cout << "Leaving " << (this->size_ - i) << " orphans." << std::endl;
@@ -711,20 +248,22 @@ namespace pcl {
 				virtual
 				void
 				clear(OctreeListNodePool<ListT> &olnp, std::function<void(ListT*)> func = nullptr) {
-					OctreeListNode<ListT> *curr = this->head_;
-					this->head_ = nullptr;
-					this->tail_ = nullptr;
-
 					int i=0;
-					while (curr != nullptr) {
-						OctreeListNode<ListT> *temp = curr;
-						curr = curr->getNext();
-						//delete temp->getContent();
-						if (func != nullptr) {
-							func(temp->getContent());
+					for (int segment=0; segment<this->segments_; ++segment) {
+						OctreeListNode<ListT> *curr = this->heads_[segment];
+						this->heads_[segment] = nullptr;
+						this->tails_[segment] = nullptr;
+
+						while (curr != nullptr) {
+							OctreeListNode<ListT> *temp = curr;
+							curr = curr->getNext();
+							//delete temp->getContent();
+							if (func != nullptr) {
+								func(temp->getContent());
+							}
+							olnp.returnUsedNode(temp);
+							++i;
 						}
-						olnp.returnUsedNode(temp);
-						i++;
 					}
 					if ((this->size_ - i) > 0)
 						std::cout << "Leaving " << (this->size_ - i) << " orphans." << std::endl;
@@ -733,19 +272,32 @@ namespace pcl {
 
 				ForwardIterator<ListT>
 				begin() {
-					return ForwardIterator<ListT>(this->head_);
+					OctreeListNode<ListT> * tmp = this->heads_[0];
+					int seg = 0;
+					while (tmp == nullptr && seg < this->segments_) {
+						tmp = this->heads_[seg++];
+					}
+					return ForwardIterator<ListT>(tmp, this);
 				}
 
 				ForwardIterator<ListT>
 				end() {
-					return ForwardIterator<ListT>(this->tail_);
+					int seg = this->segments_ - 1;
+					OctreeListNode<ListT> * tmp = this->tails_[seg];
+					while (tmp == nullptr && seg > 0) {
+						tmp = this->tails_[seg--];
+					}
+					return ForwardIterator<ListT>(tmp, this);
 				}
 
 
 			protected:
 
-				OctreeListNode<ListT> *head_ = nullptr, *tail_ = nullptr;
+				//OctreeListNode<ListT> *head_ = nullptr, *tail_ = nullptr;
+				OctreeListNode<ListT> **heads_ = nullptr, **tails_ = nullptr;
+				int segments_;
 				uint64_t size_ = 0;
+				uint64_t *sizes_;
 
 				/** \brief @b Octree multi-pointcloud point wrapper
 				  * \returns 	0 for success
@@ -755,57 +307,59 @@ namespace pcl {
 				  */
 				virtual
 				uint8_t
-				insertNode(OctreeListNode<ListT> *const &node) {
-					if (this->head_ == nullptr && this->tail_ == nullptr) {
-						this->head_ = node;
-						this->tail_ = node;
-						this->size_++;
+				insertNode(OctreeListNode<ListT> *const &node, int segment = 0) {
+					if (this->heads_[segment] == nullptr && this->tails_[segment] == nullptr) {
+						this->heads_[segment] = node;
+						this->tails_[segment] = node;
+						++this->sizes_[segment];
+						++this->size_;
 						return 2;
 					}
 
-					this->insertEnd(node);
+					this->insertEnd(node, segment);
 
 					return 0;
 				}
 
 				bool
-				pushNode(OctreeListNode<ListT> *node) {
-					return this->insertNode(node);
+				pushNode(OctreeListNode<ListT> *node, int segment = 0) {
+					return this->insertNode(node, segment);
 				}
 
 				OctreeListNode<ListT>*
-				popNode() {
-					if (this->head_ == nullptr)
+				popNode(int segment = 0) {
+					if (this->heads_[segment] == nullptr)
 						return nullptr;
 
-					OctreeListNode<ListT> *temp = this->head_;
+					OctreeListNode<ListT> *temp = this->heads_[segment];
 
-					if (this->head_ != this->tail_) {
-						if (this->head_->getNext() == nullptr)
+					if (this->heads_[segment] != this->tails_[segment]) {
+						if (this->heads_[segment]->getNext() == nullptr)
 							return nullptr;
-						this->head_->getNext()->setPrev(nullptr);
-						this->head_ = this->head_->getNext();
+						this->heads_[segment]->getNext()->setPrev(nullptr);
+						this->heads_[segment] = this->heads_[segment]->getNext();
 					} else {
-						this->head_ = nullptr;
-						this->tail_ = nullptr;
+						this->heads_[segment] = nullptr;
+						this->tails_[segment] = nullptr;
 					}
 
+					this->sizes_[segment]--;
 					this->size_--;
 					temp->resetListPointers();
 					return temp;
 				}
 
 				bool
-				punchNode(OctreeListNode<ListT> *const &node) {
+				punchNode(OctreeListNode<ListT> *const &node, int segment = 0) {
 					if (node == nullptr)
 						return false;
 
-					if (node == this->head_) {
-						this->head_ = this->head_->getNext();
+					if (node == this->heads_[segment]) {
+						this->heads_[segment] = this->heads_[segment]->getNext();
 					}
 
-					if (node == this->tail_) {
-						this->tail_ = this->tail_->getPrev();
+					if (node == this->tails_[segment]) {
+						this->tails_[segment] = this->tails_[segment]->getPrev();
 					}
 
 
@@ -829,22 +383,23 @@ namespace pcl {
 				virtual
 				OctreeListNode<ListT>*
 				findNode(u_int key) {
-					OctreeListNode<ListT> *curr = this->head_;
+					// TODO  Run across all segments
+					/*OctreeListNode<ListT> *curr = this->head_;
 
 					while (curr != nullptr) {
 						if (curr->getKey() == key) {
 							return curr;
 						}
 						curr = curr->getNext();
-					}
+					}*/
 
 					return nullptr;
 				}
 
 				virtual
 				bool
-				deleteNode(OctreeListNode<ListT> *const &node) {
-					this->punchNode(node);
+				deleteNode(OctreeListNode<ListT> *const &node, int segment = 0) {
+					this->punchNode(node, segment);
 
 					#ifndef OCTREE_MULTI_POINTCLOUD_LISTNODE_POOLING
 						delete node;
@@ -856,47 +411,52 @@ namespace pcl {
 				}
 
 				void
-				insertStart(OctreeListNode<ListT> *const &node) {
-					if (this->head_ == nullptr && this->tail_ == nullptr) {
-						this->head_ = node;
-						this->tail_ = node;
-						this->size_++;
+				insertStart(OctreeListNode<ListT> *const &node, int segment = 0) {
+					if (this->heads_[segment] == nullptr && this->tails_[segment] == nullptr) {
+						this->heads_[segment] = node;
+						this->tails_[segment] = node;
+						++this->sizes_[segment];
+						++this->size_;
 						return;
 					}
-					OctreeListNode<ListT> *temp = this->head_;
-					this->head_ = node;
+					OctreeListNode<ListT> *temp = this->heads_[segment];
+					this->heads_[segment] = node;
 
 					temp->setPrev(node);
 					node->setNext(temp);
-					this->size_++;
+					++this->sizes_[segment];
+					++this->size_;
 				}
 
 				void
-				insertEnd(OctreeListNode<ListT> *const &node) {
-					if (this->tail_ == nullptr) {
+				insertEnd(OctreeListNode<ListT> *const &node, int segment = 0) {
+					if (this->tails_[segment] == nullptr) {
 						this->insertStart(node);
 						return;
 					}
-					this->tail_->setNext(node);
-					node->setPrev(this->tail_);
-					this->tail_ = node;
-					this->size_++;
+					this->tails_[segment]->setNext(node);
+					node->setPrev(this->tails_[segment]);
+					this->tails_[segment] = node;
+					++this->sizes_[segment];
+					++this->size_;
 				}
 
 				void
-				insertBefore(OctreeListNode<ListT> *const &node, OctreeListNode<ListT> *const &before) {
+				insertBefore(OctreeListNode<ListT> *const &node, OctreeListNode<ListT> *const &before, int segment = 0) {
 					before->getPrev()->setNext(node);
 					before->setPrev(node);
 					node->setNext(before);
-					this->size_++;
+					++this->sizes_[segment];
+					++this->size_;
 				}
 
 				void
-				insertAfter(OctreeListNode<ListT> *const &node, OctreeListNode<ListT> *const &after) {
+				insertAfter(OctreeListNode<ListT> *const &node, OctreeListNode<ListT> *const &after, int segment = 0) {
 					node->setNext(after->getNext());
 					node->setPrev(after);
 					after->setNext(node);
-					this->size_++;
+					++this->sizes_[segment];
+					++this->size_;
 				}
 		};
 	}

@@ -37,7 +37,12 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
-int num_hw_threads = std::thread::hardware_concurrency() / 2;
+
+#ifdef OCTREE_MULTI_POINTCLOUD_THREADING
+	int num_hw_threads = OCTREE_MULTI_POINTCLOUD_NUM_THREADS;
+#else
+	int num_hw_threads = 1;
+#endif
 
 
 #define OCTREE_MULTI_POINTCLOUD_LISTNODE_POOLING
@@ -184,7 +189,7 @@ namespace pcl {
 						//OctreeMultiPointCloudContainer<PointT> multi_container = item->getContainer();
 						OctreeMultiPointCloudContainer<PointT>* multi_container = item;
 						if (multi_container->isVirgin ()) {
-							multi_container->registerDevices(&registered_devices_);
+							multi_container->registerDevices(&registered_devices_, num_hw_threads);
 						} else {
 							multi_container->clearPointsForDevice(device);
 							// Delete now empty voxels
@@ -238,7 +243,7 @@ namespace pcl {
 					auto *points = &cloud_copy->points;
 
 					#ifndef OCTREE_MULTI_POINTCLOUD_THREADING
-						for (int i = 0; i < points->size(); i++) {
+						for (int i = 0; i < points->size(); ++i) {
 							PointT point = points->at(i);
 							if (isnan(point.x) || isnan(point.y) || isnan(point.z)) {
 								continue;
@@ -356,7 +361,11 @@ namespace pcl {
 						if (ret) {
 							//device_voxel_map_.insert(std::pair<int, std::set<LeafContainerT*>*>(device->device_id, new std::set<LeafContainerT*>()));
 							//device_voxel_map_.insert(device_voxel_map_.end(), new PointList<LeafNode>());
-							device_voxel_map_.insert(device_voxel_map_.end(), new PointList<LeafContainerT>());
+							#ifndef OCTREE_MULTI_POINTCLOUD_THREADING
+								device_voxel_map_.insert(device_voxel_map_.end(), new PointList<LeafContainerT>());
+							#else
+								device_voxel_map_.insert(device_voxel_map_.end(), new PointList<LeafContainerT>(num_hw_threads));
+							#endif
 							current_point_clouds_.insert(current_point_clouds_.end(), nullptr);
 
 							#ifdef OCTREE_MULTI_POINTCLOUD_WRAPPER_POOLING
@@ -426,7 +435,7 @@ namespace pcl {
 					//}
 
 					if (container->isVirgin())
-						container->registerDevices(&registered_devices_);
+						container->registerDevices(&registered_devices_, num_hw_threads);
 					#ifndef OCTREE_MULTI_POINTCLOUD_THREADING
 						container->addPoint(new_point);
 					#else
@@ -449,7 +458,7 @@ namespace pcl {
 					#ifdef OCTREE_MULTI_POINTCLOUD_LOCK_INSERT
 						octree_lock.unlock();
 					#endif
-					added_points++;
+					++added_points;
 
 					//return reinterpret_cast<std::uintptr_t>(container);
 					return container;

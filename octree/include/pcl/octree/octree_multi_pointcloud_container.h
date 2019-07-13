@@ -23,7 +23,7 @@ namespace pcl {
 			static uint64_t constructed, destructed, reused;
 			/** \brief Class initialization. */
 			OctreeMultiPointCloudContainer () {
-				OctreeMultiPointCloudContainer::constructed++;
+				++OctreeMultiPointCloudContainer::constructed;
 				//std::cout << "OctreeMultiPointCloudContainer CONstructor called!" << std::endl;
 				this->reset();
 				//this->point_map_ = new std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>();
@@ -34,7 +34,7 @@ namespace pcl {
 
 			/** \brief Class deconstructor. */
 			~OctreeMultiPointCloudContainer () {
-				OctreeMultiPointCloudContainer::destructed++;
+				++OctreeMultiPointCloudContainer::destructed;
 				//std::cout << "~OctreeMultiPointCloudContainer DEstructor called!" << std::endl;
 
 				/*
@@ -76,7 +76,7 @@ namespace pcl {
 			}
 
 			void
-			registerDevices(std::set<SCDevice*> *devices) {
+			registerDevices(std::set<SCDevice*> *devices, int segments) {
 				if (!virgin_)
 					return;
 
@@ -84,8 +84,8 @@ namespace pcl {
 				//this->point_map_ = new std::vector<std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
 				//this->point_map_ = new std::map<int, std::vector<OctreeMultiPointCloudPointWrapper<PointT>*>*>;
 				// std::map<SCDevice*, std::vector<PointT*>> this->point_map_;
-				for (auto it = devices->begin(), end = devices->end(); it != end; it++) {
-					auto point_list = new PointList<OctreeMultiPointCloudPointWrapper<PointT>>;
+				for (auto it = devices->begin(), end = devices->end(); it != end; ++it) {
+					auto point_list = new PointList<OctreeMultiPointCloudPointWrapper<PointT>>(segments);
 					//point_vector->reserve((*it)->point_count / 1000);
 					this->point_map_->insert(this->point_map_->end(), point_list);
 					//this->point_map_->insert({ (*it)->device_id, new std::vector<OctreeMultiPointCloudPointWrapper<PointT>*> });
@@ -139,7 +139,7 @@ namespace pcl {
 					auto device_vector = this->point_map_->at(new_point->getDevice()->device_id);
 					//device_vector->insert(device_vector->end(), new_point);
 					device_vector->insert(new_point);
-					point_counter_++;
+					++point_counter_;
 				}
 				catch (const std::out_of_range& oor) {
 					std::cerr << "Out of Range error: " << oor.what() << '\n';
@@ -167,7 +167,7 @@ namespace pcl {
 					#else
 						device_vector->insert(new_point, olnp, poolSegment);
 					#endif
-					point_counter_++;
+					++point_counter_;
 				}
 				catch (const std::out_of_range& oor) {
 					std::cerr << "Out of Range error: " << oor.what() << '\n';
@@ -247,8 +247,8 @@ namespace pcl {
 				PointT point_sum(0,0,0);
 				float weight_sum = 0.0;
 				// std::vector<PointList<OctreeMultiPointCloudPointWrapper<PointT>>*>* point_map_  = nullptr;
-				for (auto devices = this->point_map_->begin(), devices_end = this->point_map_->end(); devices != devices_end; devices++) {
-					for (auto points = (*devices)->begin(), end = (*devices)->end(); points != end; points++) {
+				for (auto devices = this->point_map_->begin(), devices_end = this->point_map_->end(); devices != devices_end; ++devices) {
+					for (auto points = (*devices)->begin(), end = (*devices)->end(); points != end; ++points) {
 						OctreeMultiPointCloudPointWrapper<PointT>* point = (*points);
 						float acc = point->getDevice()->accuracy;
 						point_sum.x += point->getPoint()->x * acc;
@@ -277,7 +277,7 @@ namespace pcl {
 			void
 			reset () override {
 				using namespace pcl::common;
-				OctreeMultiPointCloudContainer::reused++;
+				++OctreeMultiPointCloudContainer::reused;
 
 				point_counter_ = 0;
 				//point_sum_ *= 0.0f;
@@ -302,7 +302,7 @@ namespace pcl {
 			unsigned int
 			addedSize() {
 				unsigned int ret = 0;
-				for (auto devices = this->point_map_->begin(), devices_end = this->point_map_->end(); devices != devices_end; devices++) {
+				for (auto devices = this->point_map_->begin(), devices_end = this->point_map_->end(); devices != devices_end; ++devices) {
 					ret += (*devices)->size();
 				}
 				return ret;
