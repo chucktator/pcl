@@ -20,6 +20,11 @@ namespace pcl {
 
 				}
 
+				PointList(OctreeListNodeManager<PointT> *manager, int dedicatedToThread = -1) : OctreeList<PointT>(manager, dedicatedToThread) {
+
+				}
+
+
 				~PointList() = default;
 
 		};

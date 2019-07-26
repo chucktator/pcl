@@ -30,33 +30,33 @@ namespace pcl {
 
 				void
 				push(ContentT* const& content) {
-					return this->insertEnd(content);
+					return insertEnd(content);
 				}
 
 				ContentT* const&
 				pop() {
-					if (this->size_ <= 0) {
+					if (size_ <= 0) {
 						return nullptr;
 					}
-					ContentT* const& temp = this->head;
-					this->head_ = this->head_->getNext();
-					this->size_--;
+					ContentT* const& temp = head;
+					head_ = head_->getNext();
+					size_--;
 					return temp;
 				}
 
 				ContentT* const&
 
 				punch(u_int key) {
-					OctreeListNode<ContentT> *curr = this->head_, *prev = nullptr;
+					OctreeListNode<ContentT> *curr = head_, *prev = nullptr;
 
 					while (curr != nullptr) {
 						if (curr->getKey() == key) {
 							if (prev == nullptr) {
-								this->head_ = this->head_->getNext();
+								head_ = head_->getNext();
 							} else {
 								prev->setNext(curr->getNext());
 							}
-							this->size_--;
+							size_--;
 							return curr;
 						}
 						prev = curr;

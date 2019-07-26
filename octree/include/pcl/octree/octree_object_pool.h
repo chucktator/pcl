@@ -5,7 +5,7 @@
 #ifndef PCL_OCTREEOBJECTPOOL_H
 #define PCL_OCTREEOBJECTPOOL_H
 
-#include <pcl/octree/octree_list.h>
+#include <pcl/octree/octree_multithreaded_list.h>
 #include <pcl/octree/octree_poolable_object.h>
 
 
@@ -23,73 +23,146 @@ namespace pcl {
 
 			public:
 
-				OctreeObjectPool() {
+				OctreeObjectPool(int segments = 1, OCTREE_MEMORY_STRATEGY strategy = STD_ALLOCATOR) : pool_object_manager_(segments, strategy), free_(&pool_object_manager_, segments), used_(&pool_object_manager_, segments) {
 					static_assert(std::is_base_of<OctreePoolableObject<PoolObjectT>, PoolObjectT>::value, "Derived not derived from BaseClass");
+
+					if (segments <= 0)
+						segments = 1;
+
+					strategy_ = strategy;
+
+					if (strategy_ == STD_ALLOCATOR) {
+						segments = 1;
+					}
+
+					used_size = new int[segments];
+					free_size = new int[segments];
+					capacity = new int[segments];
+					requested_objects = new int[segments];
+					returned_objects = new int[segments];
+
+					for (int i = 0; i < segments; i++) {
+						used_size[i] = 0;
+						free_size[i] = 0;
+						capacity[i] = 0;
+						requested_objects[i] = 0;
+						returned_objects[i] = 0;
+					}
+
+					segments_ = segments;
 				}
 
 				void
-				reserveMemory(uint64_t size) {
-					PoolObjectT *temp = (PoolObjectT *) std::malloc(size * sizeof(PoolObjectT));
-					this->malloc_pointers_.push_back(temp);
-					OctreeListNode<PoolObjectT>::reserveMemory(size);
-
-					for (int i = 0; i < size; i++) {
-						PoolObjectT *object = new (temp++) PoolObjectT();
-						this->free_.insert(object);
-						this->free_size++;
-						//std::cout << "Created new OctreeListNode at 0x" <<  reinterpret_cast<std::uintptr_t>(node) << " placed in memory at 0x" << reinterpret_cast<std::uintptr_t>(temp) << std::endl;
+				reserveMemory(uint64_t totalSize) {
+					if (strategy_ != STD_ALLOCATOR) {
+						pool_object_manager_.reserveMemory(totalSize * 1.5);
+						for (int i = 0; i < segments_; ++i) {
+							this->reserveMemorySegment((int) (totalSize / segments_ * 1.1), i);
+						}
 					}
-					this->capacity += size;
 				}
 
 				void
 				freeMemory() {
-					//  TODO  Implement memory freeing
+					for (auto entry : malloc_pointers_) {
+						free(entry);
+					}
 				}
 
 				PoolObjectT*
-				getFreeObject() {
-					this->requested_objects++;
-					OctreeListNode<PoolObjectT> *temp = this->free_.popNode();
-					PoolObjectT *content = temp->getContent();
+				getFreeObject(int segment = 0) {
+					++requested_objects[segment];
 
-					if (temp != nullptr) {
-						this->used_.pushNode(temp);
-						//if (std::is_base_of<OctreePoolableObject<PoolObjectT>, PoolObjectT>::value) {
-						content->setListNodeReference(temp);
-						content->setInUse(true);
-						//}
+					PoolObjectT *content;
+					OctreeListNode<PoolObjectT> *temp;
+
+					switch (strategy_) {
+
+						case STD_ALLOCATOR: {
+							content = new PoolObjectT();
+							break;
+						}
+
+						case OBJECT_POOLING: {
+							temp = free_.popNode(segment);
+							content = temp->getContent();
+
+							if (temp != nullptr) {
+								#ifdef OCTREE_MULTI_POINTCLOUD_TRACK_USED_NODES
+									used_.pushNode(temp, segment);
+								#endif
+								content->setInUse(true);
+							}
+						}
 					}
 
-					this->used_size++;
-					this->free_size--;
+					content->setListNodeReference(temp);
+
+					++used_size[segment];
+					--free_size[segment];
 
 					return content;
 				}
 
 				void
-				returnUsedObject(OctreeListNode<PoolObjectT> *node) {
-					this->returned_objects++;
-					if (this->used_.punchNode(node)) {
-						this->free_.pushNode(node);
+				returnUsedObject(PoolObjectT *object, int segment = 0) {
+					++returned_objects[segment];
+					switch (strategy_) {
+
+						case STD_ALLOCATOR: {
+							delete object;
+							break;
+						}
+
+						case OBJECT_POOLING: {
+							#ifdef OCTREE_MULTI_POINTCLOUD_TRACK_USED_NODES
+								if (used_.punchNode(object->getListNodeReference(), segment)) {
+							#endif
+								free_.pushNode(object->getListNodeReference(), segment);
+							#ifdef OCTREE_MULTI_POINTCLOUD_TRACK_USED_NODES
+								}
+							#endif
+						}
 					}
-					this->used_size--;
-					this->free_size++;
+					--used_size[segment];
+					++free_size[segment];
 				}
 
-				int used_size, free_size, capacity;
-				int requested_objects, returned_objects;
+				int *used_size, *free_size, *capacity;
+				int *requested_objects, *returned_objects;
+
+			protected:
+
+				void
+				reserveMemorySegment(uint64_t size, int segment = 0) {
+					PoolObjectT *temp = (PoolObjectT *) std::malloc(size * sizeof(PoolObjectT));
+					malloc_pointers_.push_back(temp);
+
+					for (int i = 0; i < size; i++) {
+						PoolObjectT *object = new (temp++) PoolObjectT();
+						free_.insert(object, segment);
+						++free_size[segment];
+						//std::cout << "Created new OctreeListNode at 0x" <<  reinterpret_cast<std::uintptr_t>(node) << " placed in memory at 0x" << reinterpret_cast<std::uintptr_t>(temp) << std::endl;
+					}
+					capacity[segment] += size;
+				}
 
 
 			private:
-				OctreeList<PoolObjectT> used_;
-				OctreeList<PoolObjectT> free_;
+				OctreeMultiThreadedList<PoolObjectT> used_;
+				OctreeMultiThreadedList<PoolObjectT> free_;
 
-				std::vector<PoolObjectT *> malloc_pointers_;
+				OctreeListNodeManager<PoolObjectT> pool_object_manager_;
 
+				std::vector<PoolObjectT*> malloc_pointers_;
+
+				int segments_;
+				OCTREE_MEMORY_STRATEGY strategy_;
 		};
 	}
 }
+
+// TODO  Circumvent or redirect direct access to methods of OctreeList
 
 
 #endif //PCL_OCTREEOBJECTPOOL_H

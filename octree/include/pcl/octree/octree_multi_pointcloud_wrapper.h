@@ -35,38 +35,38 @@ namespace pcl {
 
 				void
 				init(PointT *point, SCDevice *device, PointCloud<PointT> *cloud) {
-					this->point_ = point;
-					this->device_ = device;
-					this->cloud_ = cloud;
+					point_ = point;
+					device_ = device;
+					cloud_ = cloud;
 				}
 
 				/** \brief Class deconstructor. */
 				~OctreeMultiPointCloudPointWrapper () {
-					this->reset();
+					reset();
 				}
 
 				virtual
 				void
 				reset() override {
-					this->point_ = nullptr;
-					this->device_ = nullptr;
-					this->cloud_ = nullptr;
+					point_ = nullptr;
+					device_ = nullptr;
+					cloud_ = nullptr;
 				}
 
 
 				SCDevice*
 				getDevice() {
-					return this->device_;
+					return device_;
 				}
 
 				PointT*
 				getPoint() {
-					return this->point_;
+					return point_;
 				}
 
 				PointCloud<PointT>*
 				getPointCloud() {
-					return this->cloud_;
+					return cloud_;
 				}
 
 

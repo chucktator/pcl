@@ -40,8 +40,12 @@ set(incs
   "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud.h"
 
   "include/pcl/${SUBSYS_NAME}/octree_list.h"
+  "include/pcl/${SUBSYS_NAME}/octree_multithreaded_list.h"
+  "include/pcl/${SUBSYS_NAME}/octree_list_node.h"
+  "include/pcl/${SUBSYS_NAME}/octree_list_node_manager.h"
   "include/pcl/${SUBSYS_NAME}/octree_voxel_list.h"
   "include/pcl/${SUBSYS_NAME}/octree_point_list.h"
+  "include/pcl/${SUBSYS_NAME}/octree_thread_pool.h"
   #"include/pcl/${SUBSYS_NAME}/octree_memory_list.h"
   "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud_container.h"
   "include/pcl/${SUBSYS_NAME}/octree_multi_pointcloud_branch_container.h"
