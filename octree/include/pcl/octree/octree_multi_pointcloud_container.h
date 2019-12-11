@@ -20,7 +20,7 @@ namespace pcl {
 		  * \author Alexander Poeppel (poeppel@isse.de)
 		  */
 		template<typename PointT>
-		class OctreeMultiPointCloudContainer : public OctreeContainerBase {
+		class OctreeMultiPointCloudContainer : public OctreeContainerBase, public OctreePoolableObject<OctreeMultiPointCloudContainer<PointT>> {
 
 		public:
 			static uint64_t constructed, destructed, reused;

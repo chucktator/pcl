@@ -2,6 +2,8 @@ set(SUBSYS_NAME octree)
 set(SUBSYS_DESC "Point cloud octree library")
 set(SUBSYS_DEPS common)
 
+enable_language(CUDA)
+
 set(build TRUE)
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
 PCL_SUBSYS_DEPEND(build "${SUBSYS_NAME}" DEPS ${SUBSYS_DEPS})
@@ -12,9 +14,9 @@ if(NOT build)
   return()
 endif()
 
+
 set(srcs
   src/octree_inst.cpp
-  #src/octree_multi_pointcloud.cpp
 )
 
 set(incs
@@ -69,6 +71,7 @@ set(impl_incs
 set(LIB_NAME "pcl_${SUBSYS_NAME}")
 PCL_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${incs} ${impl_incs})
 target_link_libraries("${LIB_NAME}" pcl_common)
+set_target_properties( "${LIB_NAME}" PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_include_directories(${LIB_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_DEPS ${SUBSYS_DEPS})
 

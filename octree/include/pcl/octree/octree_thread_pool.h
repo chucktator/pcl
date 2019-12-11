@@ -26,6 +26,7 @@ struct OctreeThreadPool {
 		}
 
 		~OctreeThreadPool() {
+			std::cout << "Destructing OctreeThreadPool!!" << std::endl;
 			service_worker.reset();
 			grp.join_all();
 			service.stop();
