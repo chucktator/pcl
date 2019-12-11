@@ -2,8 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Point Cloud Library (PCL) - www.pointclouds.org
- *  Copyright (c) 2010-2011, Willow Garage, Inc.
- *  Copyright (c) 2012-, Open Perception, Inc.
+ *  Copyright (c) 2019-, Open Perception, Inc.
  *
  *  All rights reserved.
  *
@@ -34,16 +33,54 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * $Id: io.h 5850 2012-06-06 14:04:59Z stfox88 $
- *
  */
 
 #pragma once
 
-#ifdef __GNUC__
-#pragma GCC system_header 
+
+#include <type_traits>
+#include <utility>
+
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <pcl/point_traits.h>
+
+
+namespace pcl
+{
+
+#ifdef DOXYGEN_ONLY
+
+/**
+ * \brief Returns a boost::shared_ptr compliant with type T's allocation policy.
+ *
+ * boost::allocate_shared or boost::make_shared will be invoked in case T has or
+ * doesn't have a custom allocator, respectively.
+ *
+ * \see pcl::has_custom_allocator, PCL_MAKE_ALIGNED_OPERATOR_NEW
+ * \tparam T Type of the object to create a boost::shared_ptr of
+ * \tparam Args Types for the arguments to pcl::make_shared
+ * \param args List of arguments with which an instance of T will be constructed
+ * \return boost::shared_ptr of an instance of type T
+ */
+template<typename T, typename ... Args>
+boost::shared_ptr<T> make_shared(Args&&... args);
+
+#else
+
+template<typename T, typename ... Args>
+std::enable_if_t<has_custom_allocator<T>::value, boost::shared_ptr<T>> make_shared(Args&&... args)
+{
+  return boost::allocate_shared<T>(Eigen::aligned_allocator<T>(), std::forward<Args> (args)...);
+}
+
+template<typename T, typename ... Args>
+std::enable_if_t<!has_custom_allocator<T>::value, boost::shared_ptr<T>> make_shared(Args&&... args)
+{
+  return boost::make_shared<T>(std::forward<Args> (args)...);
+}
+
 #endif
 
-// Marking all Boost headers as system headers to remove warnings
-#include <boost/random.hpp>
-#include <boost/random/variate_generator.hpp>
+} // namespace pcl

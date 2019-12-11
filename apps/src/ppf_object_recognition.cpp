@@ -22,7 +22,7 @@ const float normal_estimation_search_radius = 0.05f;
 
 
 PointCloud<PointNormal>::Ptr
-subsampleAndCalculateNormals (PointCloud<PointXYZ>::Ptr cloud)
+subsampleAndCalculateNormals (const PointCloud<PointXYZ>::Ptr& cloud)
 {
   PointCloud<PointXYZ>::Ptr cloud_subsampled (new PointCloud<PointXYZ> ());
   VoxelGrid<PointXYZ> subsampling_filter;
@@ -63,7 +63,7 @@ main (int argc, char** argv)
   PCL_INFO ("Scene read: %s\n", argv[2]);
 
   PCL_INFO ("Reading models ...\n");
-  vector<PointCloud<PointXYZ>::Ptr > cloud_models;
+  std::vector<PointCloud<PointXYZ>::Ptr > cloud_models;
   ifstream pcd_file_list (argv[1]);
   while (!pcd_file_list.eof())
   {
@@ -99,10 +99,10 @@ main (int argc, char** argv)
   }
 
   PointCloud<PointNormal>::Ptr cloud_scene_input = subsampleAndCalculateNormals (cloud_scene);
-  vector<PointCloud<PointNormal>::Ptr > cloud_models_with_normals;
+  std::vector<PointCloud<PointNormal>::Ptr > cloud_models_with_normals;
 
   PCL_INFO ("Training models ...\n");
-  vector<PPFHashMapSearch::Ptr> hashmap_search_vector;
+  std::vector<PPFHashMapSearch::Ptr> hashmap_search_vector;
   for (const auto &cloud_model : cloud_models)
   {
     PointCloud<PointNormal>::Ptr cloud_model_input = subsampleAndCalculateNormals (cloud_model);
@@ -126,7 +126,7 @@ main (int argc, char** argv)
   viewer.addPointCloud (cloud_scene);
   viewer.spinOnce (10);
   PCL_INFO ("Registering models to scene ...\n");
-  for (size_t model_i = 0; model_i < cloud_models.size (); ++model_i)
+  for (std::size_t model_i = 0; model_i < cloud_models.size (); ++model_i)
   {
 
     PPFRegistration<PointNormal, PointNormal> ppf_registration;

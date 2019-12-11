@@ -49,12 +49,12 @@
 
 #include <vector>
 
-typedef pcl::PointXYZ PointType;
-typedef pcl::PointCloud<PointType> Cloud;
-typedef Cloud::ConstPtr CloudConstPtr;
-typedef Cloud::Ptr CloudPtr;
-typedef std::pair<std::string, CloudPtr> CloudPair;
-typedef std::vector<CloudPair> CloudVector;
+using PointType = pcl::PointXYZ;
+using Cloud = pcl::PointCloud<PointType>;
+using CloudConstPtr = Cloud::ConstPtr;
+using CloudPtr = Cloud::Ptr;
+using CloudPair = std::pair<std::string, CloudPtr>;
+using CloudVector = std::vector<CloudPair>;
 
 bool
 loopDetection (int end, const CloudVector &clouds, double dist, int &first, int &last)
@@ -123,7 +123,7 @@ main (int argc, char **argv)
   pcd_indices = pcl::console::parse_file_extension_argument (argc, argv, ".pcd");
 
   CloudVector clouds;
-  for (size_t i = 0; i < pcd_indices.size (); i++)
+  for (std::size_t i = 0; i < pcd_indices.size (); i++)
   {
     CloudPtr pc (new Cloud);
     pcl::io::loadPCDFile (argv[pcd_indices[i]], *pc);
@@ -134,7 +134,7 @@ main (int argc, char **argv)
 
   int first = 0, last = 0;
 
-  for (size_t i = 0; i < clouds.size (); i++)
+  for (std::size_t i = 0; i < clouds.size (); i++)
   {
 
     if (loopDetection (int (i), clouds, 3.0, first, last))

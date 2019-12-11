@@ -45,14 +45,7 @@
 #ifndef __CUDACC__
 #include <boost/version.hpp>
 #include <boost/numeric/conversion/cast.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition.hpp>
-#include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/bind.hpp>
-#include <boost/cstdint.hpp>
-#include <boost/function.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/mpl/fold.hpp>
@@ -62,7 +55,6 @@
 #include <boost/mpl/transform.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/chrono.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_array.hpp>

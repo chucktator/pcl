@@ -50,10 +50,10 @@
 #include <fstream>
 #include <vector>
 
-typedef pcl::PointXYZ PointType;
-typedef pcl::PointCloud<PointType> Cloud;
-typedef Cloud::ConstPtr CloudConstPtr;
-typedef Cloud::Ptr CloudPtr;
+using PointType = pcl::PointXYZ;
+using Cloud = pcl::PointCloud<PointType>;
+using CloudConstPtr = Cloud::ConstPtr;
+using CloudPtr = Cloud::Ptr;
 
 int
 main (int argc, char **argv)
@@ -85,7 +85,7 @@ main (int argc, char **argv)
 
   Eigen::Matrix4f t (Eigen::Matrix4f::Identity ());
 
-  for (size_t i = 1; i < pcd_indices.size (); i++)
+  for (std::size_t i = 1; i < pcd_indices.size (); i++)
   {
     CloudPtr data (new Cloud);
     if (pcl::io::loadPCDFile (argv[pcd_indices[i]], *data) == -1)
@@ -118,7 +118,7 @@ main (int argc, char **argv)
     CloudPtr tmp (new Cloud);
     icp.align (*tmp);
 
-    t = t * icp.getFinalTransformation ();
+    t *= icp.getFinalTransformation ();
 
     pcl::transformPointCloud (*data, *tmp, t);
 

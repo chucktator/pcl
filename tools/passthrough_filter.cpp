@@ -102,7 +102,7 @@ compute (const pcl::PCLPointCloud2::ConstPtr &input, pcl::PCLPointCloud2 &output
   passthrough_filter.setInputCloud (input);
   passthrough_filter.setFilterFieldName (field_name);
   passthrough_filter.setFilterLimits (min, max);
-  passthrough_filter.setFilterLimitsNegative (!inside);
+  passthrough_filter.setNegative (!inside);
   passthrough_filter.setKeepOrganized (keep_organized);
   passthrough_filter.filter (output);
 
@@ -124,10 +124,10 @@ saveCloud (const std::string &filename, const pcl::PCLPointCloud2 &output)
 }
 
 int
-batchProcess (const vector<string> &pcd_files, string &output_dir,
+batchProcess (const std::vector<string> &pcd_files, string &output_dir,
               const std::string &field_name, float min, float max, bool inside, bool keep_organized)
 {
-  vector<string> st;
+  std::vector<string> st;
   for (const auto &pcd_file : pcd_files)
   {
     // Load the first file
@@ -216,9 +216,9 @@ main (int argc, char** argv)
   }
   else
   {
-    if (input_dir != "" && boost::filesystem::exists (input_dir))
+    if (!input_dir.empty() && boost::filesystem::exists (input_dir))
     {
-      vector<string> pcd_files;
+      std::vector<string> pcd_files;
       boost::filesystem::directory_iterator end_itr;
       for (boost::filesystem::directory_iterator itr (input_dir); itr != end_itr; ++itr)
       {

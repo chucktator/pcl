@@ -42,6 +42,7 @@
 #include <vector>
 #include <cmath>
 #include <pcl/features/feature.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/PointIndices.h>
 
 namespace pcl
@@ -62,8 +63,8 @@ namespace pcl
       using PCLBase <PointT>::initCompute;
       using PCLBase <PointT>::deinitCompute;
 
-      typedef typename pcl::PCLBase <PointT>::PointCloudConstPtr PointCloudConstPtr;
-      typedef typename pcl::PCLBase <PointT>::PointIndicesConstPtr PointIndicesConstPtr;
+      using PointCloudConstPtr = typename pcl::PCLBase<PointT>::PointCloudConstPtr;
+      using PointIndicesConstPtr = typename pcl::PCLBase<PointT>::PointIndicesConstPtr;
 
     public:
 
@@ -100,7 +101,7 @@ namespace pcl
         * \param[in] nb_cols the number of columns to be considered col_start included
         */
       void
-      setIndices (size_t row_start, size_t col_start, size_t nb_rows, size_t nb_cols) override;
+      setIndices (std::size_t row_start, std::size_t col_start, std::size_t nb_rows, std::size_t nb_cols) override;
 
       /** \brief Constructor that sets default values for member variables. */
       MomentOfInertiaEstimation ();
@@ -348,7 +349,7 @@ namespace pcl
       Eigen::Matrix3f obb_rotational_matrix_;
 
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 }
 

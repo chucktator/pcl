@@ -35,56 +35,55 @@
  *
  */
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
-#include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include <pcl_cuda/time_cpu.h>
-#include <pcl_cuda/time_gpu.h>
 #include <pcl_cuda/io/cloud_to_pcl.h>
 #include <pcl_cuda/io/extract_indices.h>
 #include <pcl_cuda/io/disparity_to_cloud.h>
+#include <pcl_cuda/sample_consensus/sac_model_1point_plane.h>
+#include <pcl_cuda/sample_consensus/multi_ransac.h>
+#include <pcl_cuda/segmentation/connected_components.h>
+#include <pcl_cuda/time_cpu.h>
+#include <pcl_cuda/time_gpu.h>
 
+#include <pcl/common/transform.h>
 #include <pcl/io/openni_grabber.h>
 #include <pcl/io/pcd_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/point_cloud_handlers.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
-#include <pcl/common/transform.h>
-
-#include <iostream>
-
-#include <pcl_cuda/sample_consensus/sac_model_1point_plane.h>
-#include <pcl_cuda/sample_consensus/multi_ransac.h>
-#include <pcl_cuda/segmentation/connected_components.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/gpu/gpu.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include "opencv2/opencv.hpp"
-#include "opencv2/gpu/gpu.hpp"
+#include <boost/filesystem.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <functional>
+#include <iostream>
+#include <mutex>
 
 using namespace pcl_cuda;
 
 template <template <typename> class Storage>
 struct ImageType
 {
-  typedef void type;
+  using type = void;
 };
 
 template <>
 struct ImageType<pcl_cuda::Device>
 {
-  typedef cv::gpu::GpuMat type;
+  using type = cv::gpu::GpuMat;
 };
 
 template <>
 struct ImageType<pcl_cuda::Host>
 {
-  typedef cv::Mat type;
+  using type = cv::Mat;
 };
 
 class MultiRansac
@@ -101,10 +100,10 @@ class MultiRansac
 
     void viz_cb (pcl::visualization::PCLVisualizer& viz)
     {
-      boost::mutex::scoped_lock l(m_mutex);
+      std::lock_guard<std::mutex> l(m_mutex);
       if (new_cloud)
       {
-        typedef pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal> ColorHandler;
+        using ColorHandler = pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>;
 
         ColorHandler Color_handler (normal_cloud);
         static bool first_time = true;
@@ -123,8 +122,8 @@ class MultiRansac
     }
 
     template <template <typename> class Storage> void 
-    cloud_cb (const boost::shared_ptr<openni_wrapper::Image>& image,
-              const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image, 
+    cloud_cb (const openni_wrapper::Image::Ptr& image,
+              const openni_wrapper::DepthImage::Ptr& depth_image,
               float constant)
     {
       static unsigned count = 0;
@@ -225,7 +224,7 @@ class MultiRansac
       {
         typename Storage<float4>::type normals = sac_model->getNormals ();
 
-        boost::mutex::scoped_lock l(m_mutex);
+        std::lock_guard<std::mutex> l(m_mutex);
         normal_cloud.reset (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
         pcl_cuda::toPCL (*data, normals, *normal_cloud);
         new_cloud = true;
@@ -244,18 +243,18 @@ class MultiRansac
       if (use_device)
       {
         std::cerr << "[RANSAC] Using GPU..." << std::endl;
-        boost::function<void (const boost::shared_ptr<openni_wrapper::Image>& image, const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image, float)> f = boost::bind (&MultiRansac::cloud_cb<pcl_cuda::Device>, this, _1, _2, _3);
+        std::function<void (const openni_wrapper::Image::Ptr& image, const openni_wrapper::DepthImage::Ptr& depth_image, float)> f = std::bind (&MultiRansac::cloud_cb<pcl_cuda::Device>, this, _1, _2, _3);
         c = interface->registerCallback (f);
       }
       else
       {
         std::cerr << "[RANSAC] Using CPU..." << std::endl;
-        boost::function<void (const boost::shared_ptr<openni_wrapper::Image>& image, const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image, float)> f = boost::bind (&MultiRansac::cloud_cb<pcl_cuda::Host>, this, _1, _2, _3);
+        std::function<void (const openni_wrapper::Image::Ptr& image, const openni_wrapper::DepthImage::Ptr& depth_image, float)> f = std::bind (&MultiRansac::cloud_cb<pcl_cuda::Host>, this, _1, _2, _3);
         c = interface->registerCallback (f);
       }
 
       if (use_viewer)
-        viewer.runOnVisualizationThread (boost::bind(&MultiRansac::viz_cb, this, _1), "viz_cb");
+        viewer.runOnVisualizationThread (std::bind(&MultiRansac::viz_cb, this, _1), "viz_cb");
 
       interface->start ();
 
@@ -271,7 +270,7 @@ class MultiRansac
     pcl_cuda::DisparityToCloud d2c;
     pcl::visualization::CloudViewer viewer;
    
-    boost::mutex::mutex m_mutex;
+    std::mutex m_mutex;
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr normal_cloud;
     bool new_cloud;
     bool use_viewer;

@@ -69,19 +69,19 @@ namespace pcl
     {
       public:
         // public typedefs
-        typedef boost::shared_ptr<pcl::search::Octree<PointT,LeafTWrap,BranchTWrap,OctreeT> > Ptr;
-        typedef boost::shared_ptr<const pcl::search::Octree<PointT,LeafTWrap,BranchTWrap,OctreeT> > ConstPtr;
+        using Ptr = boost::shared_ptr<pcl::search::Octree<PointT,LeafTWrap,BranchTWrap,OctreeT> >;
+        using ConstPtr = boost::shared_ptr<const pcl::search::Octree<PointT,LeafTWrap,BranchTWrap,OctreeT> >;
 
-        typedef boost::shared_ptr<std::vector<int> > IndicesPtr;
-        typedef boost::shared_ptr<const std::vector<int> > IndicesConstPtr;
+        using typename Search<PointT>::IndicesPtr;
+        using typename Search<PointT>::IndicesConstPtr;
 
-        typedef pcl::PointCloud<PointT> PointCloud;
-        typedef boost::shared_ptr<PointCloud> PointCloudPtr;
-        typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
+        using PointCloud = pcl::PointCloud<PointT>;
+        using PointCloudPtr = typename PointCloud::Ptr;
+        using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
         // Boost shared pointers
-        typedef boost::shared_ptr<pcl::octree::OctreePointCloudSearch<PointT, LeafTWrap, BranchTWrap> > OctreePointCloudSearchPtr;
-        typedef boost::shared_ptr<const pcl::octree::OctreePointCloudSearch<PointT, LeafTWrap, BranchTWrap> > OctreePointCloudSearchConstPtr;
+        using OctreePointCloudSearchPtr = typename pcl::octree::OctreePointCloudSearch<PointT, LeafTWrap, BranchTWrap>::Ptr;
+        using OctreePointCloudSearchConstPtr = typename pcl::octree::OctreePointCloudSearch<PointT, LeafTWrap, BranchTWrap>::ConstPtr;
         OctreePointCloudSearchPtr tree_;
 
         using pcl::search::Search<PointT>::input_;

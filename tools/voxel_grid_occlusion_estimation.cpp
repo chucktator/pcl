@@ -56,8 +56,8 @@ using namespace pcl;
 using namespace pcl::io;
 using namespace pcl::console;
 
-typedef PointXYZ PointT;
-typedef PointCloud<PointT> CloudT;
+using PointT = PointXYZ;
+using CloudT = PointCloud<PointT>;
 
 float default_leaf_size = 0.01f;
 
@@ -209,7 +209,7 @@ int main (int argc, char** argv)
   occ_centroids->height = 1;
   occ_centroids->is_dense = false;
   occ_centroids->points.resize (occluded_voxels.size ());
-  for (size_t i = 0; i < occluded_voxels.size (); ++i)
+  for (std::size_t i = 0; i < occluded_voxels.size (); ++i)
   {
     Eigen::Vector4f xyz = vg.getCentroidCoordinate (occluded_voxels[i]);
     PointT point;
@@ -225,7 +225,7 @@ int main (int argc, char** argv)
   cloud_centroids->is_dense = false;
   cloud_centroids->points.resize (input_cloud->points.size ());
 
-  for (size_t i = 0; i < input_cloud->points.size (); ++i)
+  for (std::size_t i = 0; i < input_cloud->points.size (); ++i)
   {
     float x = input_cloud->points[i].x;
     float y = input_cloud->points[i].y;
@@ -265,7 +265,7 @@ int main (int argc, char** argv)
   vtkActor* a;
   coll->InitTraversal ();
   a = coll->GetNextActor ();
-  while(a!=0)
+  while(a!=nullptr)
     {
       renderer->AddActor (a);
       a = coll->GetNextActor ();

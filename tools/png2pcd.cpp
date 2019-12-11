@@ -150,7 +150,7 @@ main (int argc, char** argv)
   std::string mode = "DEFAULT";
   if (parse_argument (argc, argv, "-mode", mode) != -1)
   {
-    if (! (mode.compare ("DEFAULT") == 0 || mode.compare ("FORCE_COLOR") == 0 || mode.compare ("FORCE_GRAYSCALE") == 0) )
+    if (! (mode == "DEFAULT" || mode == "FORCE_COLOR" || mode == "FORCE_GRAYSCALE") )
     {
       std::cout << "Wrong mode name.\n";
       printHelp (argc, argv);
@@ -230,7 +230,7 @@ main (int argc, char** argv)
 
   std::string intensity_type;
 
-  if (mode.compare ("DEFAULT") == 0)
+  if (mode == "DEFAULT")
   {
     //
     // If the input image is a monochrome image the output cloud will be:
@@ -241,7 +241,7 @@ main (int argc, char** argv)
 
     if (pcl::console::parse_argument (argc, argv, "--intensity_type", intensity_type) != -1)
     {
-      if (intensity_type.compare ("FLOAT") != 0 && intensity_type.compare ("UINT_8") != 0)
+      if (intensity_type != "FLOAT" && intensity_type != "UINT_8")
       {
         print_error ("Wrong intensity option.\n");
         printHelp (argc, argv);
@@ -263,7 +263,7 @@ main (int argc, char** argv)
 
     switch (components)
     {
-      case 1: if (intensity_type.compare ("FLOAT") == 0)
+      case 1: if (intensity_type == "FLOAT")
       {
         if (enable_depth)
         {
@@ -330,7 +330,7 @@ main (int argc, char** argv)
             pixel[0] = color_image_data->GetScalarComponentAsDouble (x, y, 0, 0);
 
             Intensity8u gray;
-            gray.intensity = static_cast<uint8_t> (pixel[0]);
+            gray.intensity = static_cast<std::uint8_t> (pixel[0]);
 
             mono_cloud_u8 (x, dimensions[1] - y - 1) = gray;
           }
@@ -361,9 +361,9 @@ main (int argc, char** argv)
             depth2xyz (v_viewing_angle, h_viewing_angle,
                        rgb_depth_cloud.width, rgb_depth_cloud.height, x, y,
                        depth, xyzrgb.x, xyzrgb.y, xyzrgb.z);
-            xyzrgb.r = static_cast<uint8_t> (pixel[0]);
-            xyzrgb.g = static_cast<uint8_t> (pixel[1]);
-            xyzrgb.b = static_cast<uint8_t> (pixel[2]);
+            xyzrgb.r = static_cast<std::uint8_t> (pixel[0]);
+            xyzrgb.g = static_cast<std::uint8_t> (pixel[1]);
+            xyzrgb.b = static_cast<std::uint8_t> (pixel[2]);
 
             rgb_depth_cloud (x, dimensions[1] - y - 1) = xyzrgb;
           }
@@ -388,9 +388,9 @@ main (int argc, char** argv)
             pixel[2] = color_image_data->GetScalarComponentAsDouble (x, y, 0, 2);
 
             RGB color;
-            color.r = static_cast<uint8_t> (pixel[0]);
-            color.g = static_cast<uint8_t> (pixel[1]);
-            color.b = static_cast<uint8_t> (pixel[2]);
+            color.r = static_cast<std::uint8_t> (pixel[0]);
+            color.g = static_cast<std::uint8_t> (pixel[1]);
+            color.b = static_cast<std::uint8_t> (pixel[2]);
 
             int rgb = (static_cast<int> (color.r)) << 16 |
                       (static_cast<int> (color.g)) << 8 |
@@ -398,7 +398,7 @@ main (int argc, char** argv)
 
             color.rgb = static_cast<float> (rgb);
 
-            color.rgba = static_cast<uint32_t> (rgb);
+            color.rgba = static_cast<std::uint32_t> (rgb);
 
             color_cloud (x, dimensions[1] - y - 1) = color;
           }
@@ -430,10 +430,10 @@ main (int argc, char** argv)
             depth2xyz (v_viewing_angle, h_viewing_angle,
                        rgba_depth_cloud.width, rgba_depth_cloud.height, x, y,
                        depth, xyzrgba.x, xyzrgba.y, xyzrgba.z);
-            xyzrgba.r = static_cast<uint8_t> (pixel[0]);
-            xyzrgba.g = static_cast<uint8_t> (pixel[1]);
-            xyzrgba.b = static_cast<uint8_t> (pixel[2]);
-            xyzrgba.a = static_cast<uint8_t> (pixel[3]);
+            xyzrgba.r = static_cast<std::uint8_t> (pixel[0]);
+            xyzrgba.g = static_cast<std::uint8_t> (pixel[1]);
+            xyzrgba.b = static_cast<std::uint8_t> (pixel[2]);
+            xyzrgba.a = static_cast<std::uint8_t> (pixel[3]);
 
             rgba_depth_cloud (x, dimensions[1] - y - 1) = xyzrgba;
           }
@@ -459,10 +459,10 @@ main (int argc, char** argv)
             pixel[3] = color_image_data->GetScalarComponentAsDouble (x, y, 0, 3);
 
             RGB color;
-            color.r = static_cast<uint8_t> (pixel[0]);
-            color.g = static_cast<uint8_t> (pixel[1]);
-            color.b = static_cast<uint8_t> (pixel[2]);
-            color.a = static_cast<uint8_t> (pixel[3]);
+            color.r = static_cast<std::uint8_t> (pixel[0]);
+            color.g = static_cast<std::uint8_t> (pixel[1]);
+            color.b = static_cast<std::uint8_t> (pixel[2]);
+            color.a = static_cast<std::uint8_t> (pixel[3]);
 
             int rgb = (static_cast<int> (color.r)) << 16 |
                       (static_cast<int> (color.g)) << 8 |
@@ -473,7 +473,7 @@ main (int argc, char** argv)
                        (static_cast<int> (color.b));
 
             color.rgb = static_cast<float> (rgb);
-            color.rgba = static_cast<uint32_t> (rgba);
+            color.rgba = static_cast<std::uint32_t> (rgba);
 
             color_cloud (x, dimensions[1] - y - 1) = color;
           }
@@ -485,7 +485,7 @@ main (int argc, char** argv)
       break;
     }
   }
-  else if (mode.compare ("FORCE_COLOR") == 0)
+  else if (mode == "FORCE_COLOR")
   {
     //
     // Force the output cloud to be colored even if the input image is a
@@ -520,20 +520,20 @@ main (int argc, char** argv)
 
           switch (components)
           {
-            case 1:  color.r = static_cast<uint8_t> (pixel[0]);
-            color.g = static_cast<uint8_t> (pixel[0]);
-            color.b = static_cast<uint8_t> (pixel[0]);
+            case 1:  color.r = static_cast<std::uint8_t> (pixel[0]);
+            color.g = static_cast<std::uint8_t> (pixel[0]);
+            color.b = static_cast<std::uint8_t> (pixel[0]);
             break;
 
-            case 3:  color.r = static_cast<uint8_t> (pixel[0]);
-            color.g = static_cast<uint8_t> (pixel[1]);
-            color.b = static_cast<uint8_t> (pixel[2]);
+            case 3:  color.r = static_cast<std::uint8_t> (pixel[0]);
+            color.g = static_cast<std::uint8_t> (pixel[1]);
+            color.b = static_cast<std::uint8_t> (pixel[2]);
             break;
 
-            case 4:  color.r = static_cast<uint8_t> (pixel[0]);
-            color.g = static_cast<uint8_t> (pixel[1]);
-            color.b = static_cast<uint8_t> (pixel[2]);
-            color.a = static_cast<uint8_t> (pixel[3]);
+            case 4:  color.r = static_cast<std::uint8_t> (pixel[0]);
+            color.g = static_cast<std::uint8_t> (pixel[1]);
+            color.b = static_cast<std::uint8_t> (pixel[2]);
+            color.a = static_cast<std::uint8_t> (pixel[3]);
             break;
           }
 
@@ -573,9 +573,9 @@ main (int argc, char** argv)
           int rgba;
           switch (components)
           {
-            case 1:  color.r = static_cast<uint8_t> (pixel[0]);
-            color.g = static_cast<uint8_t> (pixel[0]);
-            color.b = static_cast<uint8_t> (pixel[0]);
+            case 1:  color.r = static_cast<std::uint8_t> (pixel[0]);
+            color.g = static_cast<std::uint8_t> (pixel[0]);
+            color.b = static_cast<std::uint8_t> (pixel[0]);
 
             rgb = (static_cast<int> (color.r)) << 16 |
                 (static_cast<int> (color.g)) << 8 |
@@ -583,12 +583,12 @@ main (int argc, char** argv)
 
             rgba = rgb;
             color.rgb = static_cast<float> (rgb);
-            color.rgba = static_cast<uint32_t> (rgba);
+            color.rgba = static_cast<std::uint32_t> (rgba);
             break;
 
-            case 3:  color.r = static_cast<uint8_t> (pixel[0]);
-            color.g = static_cast<uint8_t> (pixel[1]);
-            color.b = static_cast<uint8_t> (pixel[2]);
+            case 3:  color.r = static_cast<std::uint8_t> (pixel[0]);
+            color.g = static_cast<std::uint8_t> (pixel[1]);
+            color.b = static_cast<std::uint8_t> (pixel[2]);
 
             rgb = (static_cast<int> (color.r)) << 16 |
                 (static_cast<int> (color.g)) << 8 |
@@ -596,13 +596,13 @@ main (int argc, char** argv)
 
             rgba = rgb;
             color.rgb = static_cast<float> (rgb);
-            color.rgba = static_cast<uint32_t> (rgba);
+            color.rgba = static_cast<std::uint32_t> (rgba);
             break;
 
-            case 4:  color.r = static_cast<uint8_t> (pixel[0]);
-            color.g = static_cast<uint8_t> (pixel[1]);
-            color.b = static_cast<uint8_t> (pixel[2]);
-            color.a = static_cast<uint8_t> (pixel[3]);
+            case 4:  color.r = static_cast<std::uint8_t> (pixel[0]);
+            color.g = static_cast<std::uint8_t> (pixel[1]);
+            color.b = static_cast<std::uint8_t> (pixel[2]);
+            color.a = static_cast<std::uint8_t> (pixel[3]);
 
             rgb = (static_cast<int> (color.r)) << 16 |
                 (static_cast<int> (color.g)) << 8 |
@@ -613,7 +613,7 @@ main (int argc, char** argv)
                 (static_cast<int> (color.b));
 
             color.rgb = static_cast<float> (rgb);
-            color.rgba = static_cast<uint32_t> (rgba);
+            color.rgba = static_cast<std::uint32_t> (rgba);
             break;
           }
 
@@ -625,7 +625,7 @@ main (int argc, char** argv)
       saveCloud<RGB> (argv[pcd_file_indices[0]], cloud, format);
     }
   }
-  else if (mode.compare ("FORCE_GRAYSCALE") == 0)
+  else if (mode == "FORCE_GRAYSCALE")
   {
     if (enable_depth)
     {
@@ -686,7 +686,7 @@ main (int argc, char** argv)
 
       if (pcl::console::parse_argument (argc, argv, "--intensity_type", intensity_type) != -1)
       {
-        if (intensity_type.compare ("FLOAT") == 0)
+        if (intensity_type == "FLOAT")
         {
           cloud.width = dimensions[0];
           cloud.height = dimensions[1]; // This indicates that the point cloud is organized
@@ -725,7 +725,7 @@ main (int argc, char** argv)
           // Save the point cloud into a PCD file
           saveCloud<Intensity> (argv[pcd_file_indices[0]], cloud, format);
         }
-        else if (intensity_type.compare ("UINT_8") != 0)
+        else if (intensity_type != "UINT_8")
         {
           cloud8u.width = dimensions[0];
           cloud8u.height = dimensions[1]; // This indicates that the point cloud is organized
@@ -743,15 +743,15 @@ main (int argc, char** argv)
 
               switch (components)
               {
-                case 1:  gray.intensity = static_cast<uint8_t> (pixel[0]);
+                case 1:  gray.intensity = static_cast<std::uint8_t> (pixel[0]);
                 break;
 
-                case 3:  gray.intensity = static_cast<uint8_t> ( RED_MULTIPLIER * pixel[0] +
+                case 3:  gray.intensity = static_cast<std::uint8_t> ( RED_MULTIPLIER * pixel[0] +
                     GREEN_MULTIPLIER * pixel[1] +
                     BLUE_MULTIPLIER * pixel[2] );
                 break;
 
-                case 4:  gray.intensity = static_cast<uint8_t> ( RED_MULTIPLIER * pixel[0] +
+                case 4:  gray.intensity = static_cast<std::uint8_t> ( RED_MULTIPLIER * pixel[0] +
                     GREEN_MULTIPLIER * pixel[1] +
                     BLUE_MULTIPLIER * pixel[2] );
                 break;

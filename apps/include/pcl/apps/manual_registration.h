@@ -61,7 +61,7 @@
 
 #include <pcl/registration/transformation_estimation_svd.h>
 
-typedef pcl::PointXYZRGBA PointT;
+using PointT = pcl::PointXYZRGBA;
 
 // Useful macros
 #define FPS_CALC(_WHAT_) \
@@ -88,9 +88,9 @@ class ManualRegistration : public QMainWindow
 {
   Q_OBJECT
   public:
-    typedef pcl::PointCloud<PointT> Cloud;
-    typedef Cloud::Ptr CloudPtr;
-    typedef Cloud::ConstPtr CloudConstPtr;
+    using Cloud = pcl::PointCloud<PointT>;
+    using CloudPtr = Cloud::Ptr;
+    using CloudConstPtr = Cloud::ConstPtr;
 
     ManualRegistration ();
 
@@ -101,13 +101,13 @@ class ManualRegistration : public QMainWindow
     void
     setSrcCloud (pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_src)
     {
-      cloud_src_ = cloud_src;
+      cloud_src_ = std::move(cloud_src);
       cloud_src_present_ = true;
     }
     void
     setDstCloud (pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_dst)
     {
-      cloud_dst_ = cloud_dst;
+      cloud_dst_ = std::move(cloud_dst);
       cloud_dst_present_ = true;
     }
 

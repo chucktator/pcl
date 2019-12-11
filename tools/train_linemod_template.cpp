@@ -58,7 +58,7 @@ using namespace pcl;
 using namespace pcl::io;
 using namespace pcl::console;
 
-typedef pcl::PointCloud<pcl::PointXYZRGBA> PointCloudXYZRGBA;
+using PointCloudXYZRGBA = pcl::PointCloud<pcl::PointXYZRGBA>;
 
 void
 printHelp (int, char **argv)
@@ -107,7 +107,7 @@ maskForegroundPoints (const PointCloudXYZRGBA::ConstPtr & input,
   
   // Mask off points outside the specified near and far depth thresholds
   pcl::IndicesPtr indices (new std::vector<int>);
-  for (size_t i = 0; i < input->size (); ++i)
+  for (std::size_t i = 0; i < input->size (); ++i)
   {
     const float z = input->points[i].z;
     if (min_depth < z && z < max_depth)
@@ -138,12 +138,12 @@ maskForegroundPoints (const PointCloudXYZRGBA::ConstPtr & input,
 
   // Mask off any foreground points that are too high above the detected plane
   const std::vector<float> & c = coefficients->values;
-  for (size_t i = 0; i < input->size (); ++i)
+  for (std::size_t i = 0; i < input->size (); ++i)
   {
     if (foreground_mask[i])
     {
       const pcl::PointXYZRGBA & p = input->points[i];
-      float d = fabsf (c[0]*p.x + c[1]*p.y + c[2]*p.z + c[3]);
+      float d = std::abs (c[0]*p.x + c[1]*p.y + c[2]*p.z + c[3]);
       foreground_mask[i] = (d < max_height);
     }
   }
@@ -167,11 +167,11 @@ trainTemplate (const PointCloudXYZRGBA::ConstPtr & input, const std::vector<bool
   modalities[0] = &color_grad_mod;
   modalities[1] = &surface_norm_mod;
 
-  size_t min_x (input->width), min_y (input->height), max_x (0), max_y (0);
+  std::size_t min_x (input->width), min_y (input->height), max_x (0), max_y (0);
   pcl::MaskMap mask_map (input->width, input->height);
-  for (size_t j = 0; j < input->height; ++j)
+  for (std::size_t j = 0; j < input->height; ++j)
   {
-    for (size_t i = 0; i < input->width; ++i)
+    for (std::size_t i = 0; i < input->width; ++i)
     {
       mask_map (i,j) = foreground_mask[j*input->width+i];
       if (foreground_mask[j*input->width+i])
@@ -208,7 +208,7 @@ compute (const PointCloudXYZRGBA::ConstPtr & input, float min_depth, float max_d
 
   // Save the masked template cloud (masking with NaNs to preserve its organized structure)
   PointCloudXYZRGBA template_cloud (*input);
-  for (size_t i = 0; i < foreground_mask.size (); ++i)
+  for (std::size_t i = 0; i < foreground_mask.size (); ++i)
   {
     if (!foreground_mask[i])
     {

@@ -100,14 +100,14 @@ Triangulation::isInside(const ON_NurbsCurve &curve, const pcl::PointXYZ &v)
   double rScale = 1.0 / pcl::on_nurbs::NurbsTools::computeRScale (a0, a1);
 
   Eigen::Vector2d pc, tc;
-  double err, param;
+  double err;
 
   if (curve.Order () == 2)
-    param = pcl::on_nurbs::FittingCurve2dAPDM::inverseMappingO2 (curve, vp, err, pc, tc);
+    pcl::on_nurbs::FittingCurve2dAPDM::inverseMappingO2 (curve, vp, err, pc, tc);
   else
   {
-    param = pcl::on_nurbs::FittingCurve2dAPDM::findClosestElementMidPoint (curve, vp);
-    param = pcl::on_nurbs::FittingCurve2dAPDM::inverseMapping (curve, vp, param, err, pc, tc, rScale);
+    double param = pcl::on_nurbs::FittingCurve2dAPDM::findClosestElementMidPoint (curve, vp);
+    pcl::on_nurbs::FittingCurve2dAPDM::inverseMapping (curve, vp, param, err, pc, tc, rScale);
   }
 
   Eigen::Vector3d a (vp (0) - pc (0), vp (1) - pc (1), 0.0);
@@ -227,10 +227,10 @@ Triangulation::convertTrimmedSurface2PolygonMesh (const ON_NurbsSurface &nurbs, 
   pcl::on_nurbs::NurbsTools::computeBoundingBox (curve, a0, a1);
   double rScale = 1.0 / pcl::on_nurbs::NurbsTools::computeRScale (a0, a1);
 
-  std::vector<uint32_t> out_idx;
+  std::vector<std::uint32_t> out_idx;
   pcl::on_nurbs::vector_vec2d out_pc;
 
-  for (size_t i = 0; i < cloud->size (); i++)
+  for (std::size_t i = 0; i < cloud->size (); i++)
   {
     double err;
     Eigen::Vector2d pc, tc;
@@ -256,7 +256,7 @@ Triangulation::convertTrimmedSurface2PolygonMesh (const ON_NurbsSurface &nurbs, 
   for (const auto &poly : polygons)
   {
     unsigned in (0);
-    std::vector<uint32_t> out_idx_tmp;
+    std::vector<std::uint32_t> out_idx_tmp;
     pcl::on_nurbs::vector_vec2d out_pc_tmp;
 
     for (const unsigned int &vi : poly.vertices)
@@ -345,14 +345,14 @@ Triangulation::convertTrimmedSurface2PolygonMesh (const ON_NurbsSurface &nurbs, 
   std::vector<double> params (cloud->size (), 0.0);
   std::vector<bool> pt_is_in (cloud->size (), false);
 
-  std::vector<uint32_t> out_idx;
+  std::vector<std::uint32_t> out_idx;
   pcl::on_nurbs::vector_vec2d out_pc;
 
   Eigen::Vector3d a0, a1;
   pcl::on_nurbs::NurbsTools::computeBoundingBox (curve, a0, a1);
   double rScale = 1.0 / pcl::on_nurbs::NurbsTools::computeRScale (a0, a1);
 
-  for (size_t i = 0; i < cloud->size (); i++)
+  for (std::size_t i = 0; i < cloud->size (); i++)
   {
     double err, param;
     Eigen::Vector2d pc, tc;
@@ -382,7 +382,7 @@ Triangulation::convertTrimmedSurface2PolygonMesh (const ON_NurbsSurface &nurbs, 
   for (const auto &poly : polygons)
   {
     unsigned in (0);
-    std::vector<uint32_t> out_idx_tmp;
+    std::vector<std::uint32_t> out_idx_tmp;
     pcl::on_nurbs::vector_vec2d out_pc_tmp;
 
     for (const unsigned int &vi : poly.vertices)

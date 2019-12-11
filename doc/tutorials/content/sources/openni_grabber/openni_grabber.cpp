@@ -29,8 +29,8 @@ public:
     pcl::Grabber* interface = new pcl::OpenNIGrabber();
 
     // make callback function from member function
-    boost::function<void (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f =
-      boost::bind (&SimpleOpenNIProcessor::cloud_cb_, this, _1);
+    std::function<void (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f =
+      [this] (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr& cloud) { cloud_cb_ (cloud); };
 
     // connect callback function for desired signal. In this case its a point cloud with color values
     boost::signals2::connection c = interface->registerCallback (f);

@@ -32,16 +32,16 @@ namespace pcl
     private:
 
       /** \brief Sorts peaks */
-      typedef struct
+      struct peaks_ordering
       {
         bool
         operator() (std::pair<float, int> const& a, std::pair<float, int> const& b)
         {
           return a.first > b.first;
         }
-      } peaks_ordering;
+      };
 
-      typedef typename pcl::PointCloud<PointT>::Ptr PointTPtr;
+      using PointTPtr = typename pcl::PointCloud<PointT>::Ptr;
 
       /** \brief View of the model to be aligned to input_view_ */
       PointTPtr target_view_;
@@ -220,7 +220,7 @@ namespace pcl
 
         multAB[nbins_ - 1].r = input_ftt_negate.points[0].histogram[nbins_ - 1] * target_ftt.points[0].histogram[nbins_ - 1];
 
-        kiss_fft_cfg mycfg = kiss_fft_alloc (nr_bins_after_padding, 1, NULL, NULL);
+        kiss_fft_cfg mycfg = kiss_fft_alloc (nr_bins_after_padding, 1, nullptr, nullptr);
         kiss_fft_cpx * invAB = new kiss_fft_cpx[nr_bins_after_padding];
         kiss_fft (mycfg, multAB, invAB);
 

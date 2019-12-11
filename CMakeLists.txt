@@ -1,5 +1,5 @@
 ### ---[ PCL global CMake
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 if(POLICY CMP0074)
   # 1. Remove with 3.12.4.
@@ -40,18 +40,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebI
   add_definitions("-DBOOST_DISABLE_ASSERTS -DEIGEN_NO_DEBUG")
 endif()
 if(WIN32 AND NOT MINGW)
-  if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
-    set(CMAKE_DEBUG_POSTFIX "_debug")
-  endif()
-  if(NOT DEFINED CMAKE_RELEASE_POSTFIX)
-    set(CMAKE_RELEASE_POSTFIX "_release")
-  endif()
-  if(NOT DEFINED CMAKE_RELWITHDEBINFO_POSTFIX)
-    set(CMAKE_RELWITHDEBINFO_POSTFIX "_release")
-  endif()
-  if(NOT DEFINED CMAKE_MINSIZEREL_POSTFIX)
-    set(CMAKE_MINSIZEREL_POSTFIX "_release")
-  endif()
+  set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "Add postfix to target for Debug build.")
+  set(CMAKE_RELEASE_POSTFIX "" CACHE STRING "Add postfix to target for Release build.")
+  set(CMAKE_RELWITHDEBINFO_POSTFIX "rd" CACHE STRING "Add postfix to target for RelWithDebInfo build.")
+  set(CMAKE_MINSIZEREL_POSTFIX "s" CACHE STRING "Add postfix to target for MinSizeRel build")
 endif()
 
 # ---[ special maintainer mode
@@ -101,6 +93,12 @@ endif()
 include("${PCL_SOURCE_DIR}/cmake/pcl_verbosity.cmake")
 include("${PCL_SOURCE_DIR}/cmake/pcl_targets.cmake")
 include("${PCL_SOURCE_DIR}/cmake/pcl_options.cmake")
+include("${PCL_SOURCE_DIR}/cmake/clang-format.cmake")
+
+if(${PCL_ENABLE_CCACHE})
+  include (UseCompilerCache)
+  UseCompilerCache(ccache REQUIRED)
+endif()
 
 # Enable verbose timing display?
 if(CMAKE_TIMING_VERBOSE AND UNIX)
@@ -117,11 +115,15 @@ endif()
 # ---[ Unix/Darwin/Windows specific flags
 if(CMAKE_COMPILER_IS_GNUCXX)
   if("${CMAKE_CXX_FLAGS}" STREQUAL "${CMAKE_CXX_FLAGS_DEFAULT}")
-    set(CMAKE_CXX_FLAGS "-Wabi -Wall -Wextra -Wno-unknown-pragmas -fno-strict-aliasing -Wno-format-extra-args -Wno-sign-compare -Wno-invalid-offsetof -Wno-conversion ${SSE_FLAGS_STR}")
-  endif()
-
-  if(NOT ANDROID)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wabi=11")
+    else()
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wabi")
+    endif()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -fno-strict-aliasing -Wno-format-extra-args -Wno-sign-compare -Wno-invalid-offsetof -Wno-conversion ${SSE_FLAGS_STR}")
+    if(PCL_WARNINGS_ARE_ERRORS)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    endif()
   endif()
 
   if("${CMAKE_SHARED_LINKER_FLAGS}" STREQUAL "" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -155,6 +157,10 @@ if(CMAKE_COMPILER_IS_MSVC)
     endif()
     # /MANIFEST:NO") # please, don't disable manifest generation, otherwise crash at start for vs2008
 
+    if(PCL_WARNINGS_ARE_ERRORS)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+    endif()
+
     include(ProcessorCount)
     ProcessorCount(CPUCores)
     set(MSVC_MP ${CPUCores} CACHE STRING "Number of simultaneously running compilers (0 = automatic detection by MSVC). See documentation of /MP flag.")
@@ -187,7 +193,7 @@ endif()
 
 if(CMAKE_COMPILER_IS_PATHSCALE)
   if("${CMAKE_CXX_FLAGS}" STREQUAL "${CMAKE_CXX_FLAGS_DEFAULT}")
-    set(CMAKE_CXX_FLAGS "-Wno-uninitialized -zerouv -pthread -mp")
+    set(CMAKE_CXX_FLAGS "-Wno-uninitialized -zerouv -mp")
   endif()
   if("${CMAKE_SHARED_LINKER_FLAGS}" STREQUAL "")
     set(CMAKE_SHARED_LINKER_FLAGS "-mp")
@@ -288,6 +294,9 @@ else()
   message(STATUS "Not found OpenMP")
 endif()
 
+# Threads (required)
+find_package(Threads REQUIRED)
+
 # Eigen (required)
 find_package(Eigen 3.1 REQUIRED)
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
@@ -314,6 +323,7 @@ PCL_ADD_GRABBER_DEPENDENCY("Ensenso" "IDS-Imaging Ensenso camera support")
 PCL_ADD_GRABBER_DEPENDENCY("davidSDK" "David Vision Systems SDK support")
 PCL_ADD_GRABBER_DEPENDENCY("DSSDK" "DepthSense SDK support")
 PCL_ADD_GRABBER_DEPENDENCY("RSSDK" "RealSense SDK support")
+PCL_ADD_GRABBER_DEPENDENCY("RSSDK2" "RealSense SDK 2.0 (librealsense) support")
 
 # metslib
 if(PKG_CONFIG_FOUND)
@@ -364,7 +374,28 @@ endif()
 # Find VTK
 option(WITH_VTK "Build VTK-Visualizations" TRUE)
 if(WITH_VTK AND NOT ANDROID)
-  find_package(VTK)
+  set(PCL_VTK_COMPONENTS
+    vtkChartsCore
+    vtkCommonCore
+    vtkCommonDataModel
+    vtkCommonExecutionModel
+    vtkFiltersCore
+    vtkFiltersExtraction
+    vtkFiltersModeling
+    vtkImagingCore
+    vtkImagingSources
+    vtkInteractionStyle
+    vtkInteractionWidgets
+    vtkIOCore
+    vtkIOGeometry
+    vtkIOImage
+    vtkIOLegacy
+    vtkIOPLY
+    vtkRenderingAnnotation
+    vtkRenderingLOD
+    vtkViewsContext2D
+  )
+  find_package(VTK COMPONENTS ${PCL_VTK_COMPONENTS})
   if(VTK_FOUND AND ("${VTK_VERSION}" VERSION_LESS 6.2))
     message(WARNING "The minimum required version of VTK is 6.2, but found ${VTK_VERSION}")
     set(VTK_FOUND FALSE)
@@ -376,17 +407,28 @@ if(WITH_VTK AND NOT ANDROID)
       # safe to assume OpenGL backend
       set(VTK_RENDERING_BACKEND "OpenGL")
     endif()
+    list(APPEND PCL_VTK_COMPONENTS vtkRenderingContext${VTK_RENDERING_BACKEND})
+
+    if(WITH_QT)
+      if(";${VTK_MODULES_ENABLED};" MATCHES ";vtkGUISupportQt;" AND ";${VTK_MODULES_ENABLED};" MATCHES ";vtkRenderingQt;")
+        set(QVTK_FOUND ON)
+        list(APPEND PCL_VTK_COMPONENTS vtkRenderingQt vtkGUISupportQt)
+      else()
+        unset(QVTK_FOUND)
+      endif()
+    endif()
+
+    find_package(VTK COMPONENTS ${PCL_VTK_COMPONENTS})
+
     message(STATUS "VTK_MAJOR_VERSION ${VTK_MAJOR_VERSION}, rendering backend: ${VTK_RENDERING_BACKEND}")
     if(PCL_SHARED_LIBS OR (NOT (PCL_SHARED_LIBS) AND NOT (VTK_BUILD_SHARED_LIBS)))
-      set(VTK_FOUND TRUE)
-      find_package(QVTK)
       if(VTK_USE_FILE)
         include(${VTK_USE_FILE})
       endif()
-      message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, lib: ${VTK_LIBRARIES}")
+      message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, libs: ${VTK_LIBRARIES}")
       if(APPLE)
-          option(VTK_USE_COCOA "Use Cocoa for VTK render windows" ON)
-          mark_as_advanced(VTK_USE_COCOA)
+        option(VTK_USE_COCOA "Use Cocoa for VTK render windows" ON)
+        mark_as_advanced(VTK_USE_COCOA)
       endif()
       if(${VTK_RENDERING_BACKEND} STREQUAL "OpenGL")
         set(VTK_RENDERING_BACKEND_OPENGL_VERSION "1")
@@ -428,12 +470,6 @@ set(pcl_config_h "${CMAKE_CURRENT_BINARY_DIR}/include/pcl/pcl_config.h")
 configure_file("${pcl_config_h_in}" "${pcl_config_h}")
 PCL_ADD_INCLUDES(common "" "${pcl_config_h}")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
-
-### ---[ Set up for tests
-enable_testing()
-
-### ---[ Set up for examples
-#include("${PCL_SOURCE_DIR}/cmake/pcl_examples.cmake")
 
 ### ---[ Add the libraries subdirectories
 include("${PCL_SOURCE_DIR}/cmake/pcl_targets.cmake")

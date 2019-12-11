@@ -35,12 +35,6 @@
  *
  */
 
-#include <iostream>
-
-#include <boost/thread/mutex.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/format.hpp>
-
 #include <pcl/io/pcd_io.h>
 #include <pcl/common/time.h>
 #include <pcl/console/print.h>
@@ -48,6 +42,12 @@
 #include <pcl/io/io_exception.h>
 #include <pcl/io/depth_sense_grabber.h>
 #include <pcl/visualization/pcl_visualizer.h>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/format.hpp>
+
+#include <iostream>
+#include <mutex>
 
 using namespace pcl::console;
 
@@ -92,15 +92,14 @@ printHelp (int, char **argv)
 void
 printDeviceList ()
 {
-  typedef boost::shared_ptr<pcl::DepthSenseGrabber> DepthSenseGrabberPtr;
-  std::vector<DepthSenseGrabberPtr> grabbers;
+  std::vector<DepthSenseGrabber::Ptr> grabbers;
   std::cout << "Connected devices: ";
   boost::format fmt ("\n  #%i  %s");
   while (true)
   {
     try
     {
-      grabbers.push_back (DepthSenseGrabberPtr (new pcl::DepthSenseGrabber));
+      grabbers.push_back (DepthSenseGrabber::Ptr (new pcl::DepthSenseGrabber));
       std::cout << boost::str (fmt % grabbers.size () % grabbers.back ()->getDeviceSerialNumber ());
     }
     catch (pcl::io::IOException& e)
@@ -120,7 +119,7 @@ class DepthSenseViewer
 
   public:
 
-    typedef pcl::PointCloud<PointT> PointCloudT;
+    using PointCloudT = pcl::PointCloud<PointT>;
 
     DepthSenseViewer (pcl::DepthSenseGrabber& grabber)
     : grabber_ (grabber)
@@ -140,14 +139,17 @@ class DepthSenseViewer
     void
     run ()
     {
-      boost::function<void (const typename PointCloudT::ConstPtr&)> f = boost::bind (&DepthSenseViewer::cloudCallback, this, _1);
+      std::function<void (const typename PointCloudT::ConstPtr&)> f = [this] (const typename PointCloudT::ConstPtr& cloud)
+      {
+        cloudCallback (cloud);
+      };
       connection_ = grabber_.registerCallback (f);
       grabber_.start ();
       while (!viewer_.wasStopped ())
       {
         if (new_cloud_)
         {
-          boost::mutex::scoped_lock lock (new_cloud_mutex_);
+          std::lock_guard<std::mutex> lock (new_cloud_mutex_);
           if (!viewer_.updatePointCloud (new_cloud_, "cloud"))
           {
             viewer_.addPointCloud (new_cloud_, "cloud");
@@ -169,7 +171,7 @@ class DepthSenseViewer
     {
       if (!viewer_.wasStopped ())
       {
-        boost::mutex::scoped_lock lock (new_cloud_mutex_);
+        std::lock_guard<std::mutex> lock (new_cloud_mutex_);
         new_cloud_ = cloud;
       }
     }
@@ -251,7 +253,7 @@ class DepthSenseViewer
       // Temporal filter settings
       std::string tfs = boost::str (boost::format (", window size %i") % window_);
       entries.push_back (boost::format ("temporal filtering: %s%s") % TF[temporal_filtering_] % (temporal_filtering_ == pcl::DepthSenseGrabber::DepthSense_None ? "" : tfs));
-      for (size_t i = 0; i < entries.size (); ++i)
+      for (std::size_t i = 0; i < entries.size (); ++i)
       {
         std::string name = boost::str (name_fmt % i);
         std::string entry = boost::str (entries[i]);
@@ -268,7 +270,7 @@ class DepthSenseViewer
     int window_;
     pcl::DepthSenseGrabber::TemporalFilteringType temporal_filtering_;
 
-    mutable boost::mutex new_cloud_mutex_;
+    mutable std::mutex new_cloud_mutex_;
     typename PointCloudT::ConstPtr new_cloud_;
     typename PointCloudT::ConstPtr last_cloud_;
 

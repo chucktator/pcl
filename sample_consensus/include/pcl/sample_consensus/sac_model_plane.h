@@ -106,7 +106,7 @@ namespace pcl
   template <typename Point> inline double
   pointToPlaneDistance (const Point &p, double a, double b, double c, double d)
   {
-    return (fabs (pointToPlaneDistanceSigned (p, a, b, c, d)) );
+    return (std::abs (pointToPlaneDistanceSigned (p, a, b, c, d)) );
   }
 
   /** \brief Get the distance from a point to a plane (unsigned) defined by ax+by+cz+d=0
@@ -117,7 +117,7 @@ namespace pcl
   template <typename Point> inline double
   pointToPlaneDistance (const Point &p, const Eigen::Vector4f &plane_coefficients)
   {
-    return ( fabs (pointToPlaneDistanceSigned (p, plane_coefficients)) );
+    return ( std::abs (pointToPlaneDistanceSigned (p, plane_coefficients)) );
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,11 +141,12 @@ namespace pcl
       using SampleConsensusModel<PointT>::error_sqr_dists_;
       using SampleConsensusModel<PointT>::isModelValid;
 
-      typedef typename SampleConsensusModel<PointT>::PointCloud PointCloud;
-      typedef typename SampleConsensusModel<PointT>::PointCloudPtr PointCloudPtr;
-      typedef typename SampleConsensusModel<PointT>::PointCloudConstPtr PointCloudConstPtr;
+      using PointCloud = typename SampleConsensusModel<PointT>::PointCloud;
+      using PointCloudPtr = typename SampleConsensusModel<PointT>::PointCloudPtr;
+      using PointCloudConstPtr = typename SampleConsensusModel<PointT>::PointCloudConstPtr;
 
-      typedef boost::shared_ptr<SampleConsensusModelPlane> Ptr;
+      using Ptr = boost::shared_ptr<SampleConsensusModelPlane<PointT> >;
+      using ConstPtr = boost::shared_ptr<const SampleConsensusModelPlane<PointT>>;
 
       /** \brief Constructor for base SampleConsensusModelPlane.
         * \param[in] cloud the input point cloud dataset
@@ -248,7 +249,7 @@ namespace pcl
                             const Eigen::VectorXf &model_coefficients,
                             const double threshold) const override;
 
-      /** \brief Return an unique id for this model (SACMODEL_PLANE). */
+      /** \brief Return a unique id for this model (SACMODEL_PLANE). */
       inline pcl::SacModel 
       getModelType () const override { return (SACMODEL_PLANE); }
 

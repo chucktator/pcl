@@ -36,8 +36,6 @@
  * Author: Keven Ring <keven@mitre.org>
  */
 
-#include <thread>
-
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/common/time.h> //fps calculations
@@ -51,9 +49,12 @@
 #include <pcl/console/parse.h>
 #include <pcl/visualization/boost.h>
 #include <pcl/visualization/mouse_event.h>
+
+#include <boost/algorithm/string.hpp>
+
+#include <mutex>
 #include <vector>
 #include <string>
-#include <boost/algorithm/string.hpp>
 #include <typeinfo>
 
 using namespace std;
@@ -90,9 +91,9 @@ template <typename PointType>
 class SimpleVLPViewer
 {
   public:
-    typedef PointCloud<PointType> Cloud;
-    typedef typename Cloud::ConstPtr CloudConstPtr;
-    typedef typename Cloud::Ptr CloudPtr;
+    using Cloud = PointCloud<PointType>;
+    using CloudConstPtr = typename Cloud::ConstPtr;
+    using CloudPtr = typename Cloud::Ptr;
 
     SimpleVLPViewer (Grabber& grabber,
                      PointCloudColorHandler<PointType> *handler) :
@@ -106,7 +107,7 @@ class SimpleVLPViewer
     cloud_callback (const CloudConstPtr& cloud)
     {
       FPS_CALC("cloud callback");
-      boost::mutex::scoped_lock lock (cloud_mutex_);
+      std::lock_guard<std::mutex> lock (cloud_mutex_);
       cloud_ = cloud;
     }
 
@@ -159,8 +160,7 @@ class SimpleVLPViewer
       cloud_viewer_->setCameraClipDistances (0.0, 50.0);
       cloud_viewer_->registerKeyboardCallback (&SimpleVLPViewer::keyboard_callback, *this);
 
-      boost::function<void
-      (const CloudConstPtr&)> cloud_cb = boost::bind (&SimpleVLPViewer::cloud_callback, this, _1);
+      std::function<void (const CloudConstPtr&)> cloud_cb = [this] (const CloudConstPtr& cloud){ cloud_callback (cloud); };
       boost::signals2::connection cloud_connection = grabber_.registerCallback (cloud_cb);
 
       grabber_.start ();
@@ -196,12 +196,12 @@ class SimpleVLPViewer
       cloud_connection.disconnect ();
     }
 
-    boost::shared_ptr<PCLVisualizer> cloud_viewer_;
-    boost::shared_ptr<ImageViewer> image_viewer_;
+    PCLVisualizer::Ptr cloud_viewer_;
+    ImageViewer::Ptr image_viewer_;
 
     Grabber& grabber_;
-    boost::mutex cloud_mutex_;
-    boost::mutex image_mutex_;
+    std::mutex cloud_mutex_;
+    std::mutex image_mutex_;
 
     CloudConstPtr cloud_;
     PointCloudColorHandler<PointType> *handler_;
@@ -210,8 +210,8 @@ class SimpleVLPViewer
 void
 usage (char ** argv)
 {
-  cout << "usage: " << argv[0] << " [-pcapFile <path-to-pcap-file>] [-h | --help]" << endl;
-  cout << argv[0] << " -h | --help : shows this help" << endl;
+  std::cout << "usage: " << argv[0] << " [-pcapFile <path-to-pcap-file>] [-h | --help]" << std::endl;
+  std::cout << argv[0] << " -h | --help : shows this help" << std::endl;
   return;
 }
 

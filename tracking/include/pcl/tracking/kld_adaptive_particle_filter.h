@@ -41,25 +41,26 @@ namespace pcl
       using ParticleFilterTracker<PointInT, StateT>::representative_state_;
       using ParticleFilterTracker<PointInT, StateT>::sampleWithReplacement;
 
-      typedef Tracker<PointInT, StateT> BaseClass;
+      using BaseClass = Tracker<PointInT, StateT>;
 
-      typedef boost::shared_ptr<KLDAdaptiveParticleFilterTracker<PointInT, StateT>> Ptr;
-      
-      typedef typename Tracker<PointInT, StateT>::PointCloudIn PointCloudIn;
-      typedef typename PointCloudIn::Ptr PointCloudInPtr;
-      typedef typename PointCloudIn::ConstPtr PointCloudInConstPtr;
+      using Ptr = boost::shared_ptr<KLDAdaptiveParticleFilterTracker<PointInT, StateT>>;
+      using ConstPtr = boost::shared_ptr<const KLDAdaptiveParticleFilterTracker<PointInT, StateT>>;
 
-      typedef typename Tracker<PointInT, StateT>::PointCloudState PointCloudState;
-      typedef typename PointCloudState::Ptr PointCloudStatePtr;
-      typedef typename PointCloudState::ConstPtr PointCloudStateConstPtr;
+      using PointCloudIn = typename Tracker<PointInT, StateT>::PointCloudIn;
+      using PointCloudInPtr = typename PointCloudIn::Ptr;
+      using PointCloudInConstPtr = typename PointCloudIn::ConstPtr;
 
-      typedef PointCoherence<PointInT> Coherence;
-      typedef boost::shared_ptr< Coherence > CoherencePtr;
-      typedef boost::shared_ptr< const Coherence > CoherenceConstPtr;
+      using PointCloudState = typename Tracker<PointInT, StateT>::PointCloudState;
+      using PointCloudStatePtr = typename PointCloudState::Ptr;
+      using PointCloudStateConstPtr = typename PointCloudState::ConstPtr;
 
-      typedef PointCloudCoherence<PointInT> CloudCoherence;
-      typedef boost::shared_ptr< CloudCoherence > CloudCoherencePtr;
-      typedef boost::shared_ptr< const CloudCoherence > CloudCoherenceConstPtr;
+      using Coherence = PointCoherence<PointInT>;
+      using CoherencePtr = typename Coherence::Ptr;
+      using CoherenceConstPtr = typename Coherence::ConstPtr;
+
+      using CloudCoherence = PointCloudCoherence<PointInT>;
+      using CloudCoherencePtr = typename CloudCoherence::Ptr;
+      using CloudCoherenceConstPtr = typename CloudCoherence::ConstPtr;
 
       /** \brief Empty constructor. */
       KLDAdaptiveParticleFilterTracker ()

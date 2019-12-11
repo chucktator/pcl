@@ -55,10 +55,10 @@ namespace pcl
   {
     public:
       // =====TYPEDEFS=====
-      typedef pcl::PointCloud<PointWithRange> BaseClass;
-      typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > VectorOfEigenVector3f;
-      typedef boost::shared_ptr<RangeImage> Ptr;
-      typedef boost::shared_ptr<const RangeImage> ConstPtr;
+      using BaseClass = pcl::PointCloud<PointWithRange>;
+      using VectorOfEigenVector3f = std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> >;
+      using Ptr = boost::shared_ptr<RangeImage>;
+      using ConstPtr = boost::shared_ptr<const RangeImage>;
       
       enum CoordinateFrame
       {
@@ -71,7 +71,7 @@ namespace pcl
       /** Constructor */
       PCL_EXPORTS RangeImage ();
       /** Destructor */
-      PCL_EXPORTS ~RangeImage ();
+      PCL_EXPORTS virtual ~RangeImage () = default;
       
       // =====STATIC VARIABLES=====
       /** The maximum number of openmp threads that can be used in this class */
@@ -535,7 +535,7 @@ namespace pcl
       inline bool
       getNormalForClosestNeighbors (int x, int y, int radius, const Eigen::Vector3f& point,
                                     int no_of_nearest_neighbors, Eigen::Vector3f& normal,
-                                    Eigen::Vector3f* point_on_plane=NULL, int step_size=1) const;
+                                    Eigen::Vector3f* point_on_plane=nullptr, int step_size=1) const;
       
       /** Same as above, using default values */
       inline bool
@@ -548,9 +548,9 @@ namespace pcl
                              int no_of_closest_neighbors, int step_size,
                              float& max_closest_neighbor_distance_squared,
                              Eigen::Vector3f& normal, Eigen::Vector3f& mean, Eigen::Vector3f& eigen_values,
-                             Eigen::Vector3f* normal_all_neighbors=NULL,
-                             Eigen::Vector3f* mean_all_neighbors=NULL,
-                             Eigen::Vector3f* eigen_values_all_neighbors=NULL) const;
+                             Eigen::Vector3f* normal_all_neighbors=nullptr,
+                             Eigen::Vector3f* mean_all_neighbors=nullptr,
+                             Eigen::Vector3f* eigen_values_all_neighbors=nullptr) const;
       
       // Return the squared distance to the n-th neighbors of the point at x,y
       inline float
@@ -758,8 +758,8 @@ namespace pcl
       // BaseClass:
       //   roslib::Header header;
       //   std::vector<PointT> points;
-      //   uint32_t width;
-      //   uint32_t height;
+      //   std::uint32_t width;
+      //   std::uint32_t height;
       //   bool is_dense;
 
       static bool debug; /**< Just for... well... debugging purposes. :-) */
@@ -795,7 +795,7 @@ namespace pcl
       static inline float
       asinLookUp (float value);
       
-      /** Query the atan2 lookup table */
+      /** Query the std::atan2 lookup table */
       static inline float
       atan2LookUp (float y, float x);
      
@@ -805,7 +805,7 @@ namespace pcl
 
 
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /**

@@ -56,7 +56,7 @@
        performAction (QList <const CloudComposerItem*> input_data, PointTypeFlags::PointType type = PointTypeFlags::NONE) override;
        
        template <typename PointT> QList <CloudComposerItem*>
-       performTemplatedAction (QList <const CloudComposerItem*> input_data);
+       performTemplatedAction (const QList <const CloudComposerItem*>& input_data);
        
        inline QString
        getToolName () const override { return "Organized Segmenation Tool";}
@@ -70,7 +70,7 @@
        Q_PLUGIN_METADATA(IID "cloud_composer.ToolFactory/1.0")
      public:
        SplitItemTool*
-       createTool (PropertiesModel* parameter_model, QObject* parent = 0) override 
+       createTool (PropertiesModel* parameter_model, QObject* parent = nullptr) override 
        {
          return new OrganizedSegmentationTool(parameter_model, parent);
        }

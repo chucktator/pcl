@@ -53,17 +53,16 @@
 #include <pcl/segmentation/organized_connected_component_segmentation.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
-//#include <pcl/stereo/stereo_grabber.h>
 #include <pcl/stereo/stereo_matching.h>
 #include <pcl/segmentation/ground_plane_comparator.h>
 #include <pcl/segmentation/euclidean_cluster_comparator.h>
 
+#include <mutex>
 
-
-typedef pcl::PointXYZRGB PointT;
-typedef pcl::PointCloud<PointT> Cloud;
-typedef Cloud::Ptr CloudPtr;
-typedef Cloud::ConstPtr CloudConstPtr;
+using PointT = pcl::PointXYZRGB;
+using Cloud = pcl::PointCloud<PointT>;
+using CloudPtr = Cloud::Ptr;
+using CloudConstPtr = Cloud::ConstPtr;
 
   /** \brief StereoGroundSegmentation is a demonstration application for using PCL's stereo tools and segmentation tools to detect smooth surfaces suitable for driving.
     *
@@ -81,7 +80,7 @@ class HRCSSegmentation
     pcl::PointCloud<PointT>::ConstPtr prev_label_image;
     Eigen::Vector4f prev_ground_normal;
     Eigen::Vector4f prev_ground_centroid;
-    boost::mutex cloud_mutex;
+    std::mutex cloud_mutex;
 
     pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
     pcl::GroundPlaneComparator<PointT, pcl::Normal>::Ptr road_comparator;
@@ -125,7 +124,7 @@ class HRCSSegmentation
       viewer->setBackgroundColor (0, 0, 0);
       viewer->addCoordinateSystem (1.0, "global");
       viewer->initCameraParameters ();
-      viewer->registerKeyboardCallback (&HRCSSegmentation::keyboardCallback, *this, 0);
+      viewer->registerKeyboardCallback (&HRCSSegmentation::keyboardCallback, *this, nullptr);
       
       // Set up the stereo matching
       stereo.setMaxDisparity(60);
@@ -271,13 +270,13 @@ class HRCSSegmentation
         if (region_index.indices.size () > 1000)
         {
 
-          for (size_t j = 0; j < region_index.indices.size (); j++)
+          for (std::size_t j = 0; j < region_index.indices.size (); j++)
           {  
             pcl::PointXYZ ground_pt (cloud->points[region_index.indices[j]].x,
                                      cloud->points[region_index.indices[j]].y,
                                      cloud->points[region_index.indices[j]].z);
             ground_cloud->points.push_back (ground_pt);
-            ground_image->points[region_index.indices[j]].g = static_cast<pcl::uint8_t> ((cloud->points[region_index.indices[j]].g + 255) / 2);
+            ground_image->points[region_index.indices[j]].g = static_cast<std::uint8_t> ((cloud->points[region_index.indices[j]].g + 255) / 2);
             label_image->points[region_index.indices[j]].r = 0;
             label_image->points[region_index.indices[j]].g = 255;
             label_image->points[region_index.indices[j]].b = 0;
@@ -322,14 +321,14 @@ class HRCSSegmentation
       grow_labels.resize (region_indices.size (), false);
       label_to_model.resize (region_indices.size (), 0);
       
-      for (size_t i = 0; i < model_coefficients.size (); i++)
+      for (std::size_t i = 0; i < model_coefficients.size (); i++)
       {
         int model_label = (labels)[inlier_indices[i].indices[0]].label;
         label_to_model[model_label] = static_cast<int> (i);
         grow_labels[model_label] = true;
       }
       
-      boost::shared_ptr<pcl::PointCloud<pcl::Label> > labels_ptr (new pcl::PointCloud<pcl::Label>());
+      pcl::PointCloud<pcl::Label>::Ptr labels_ptr (new pcl::PointCloud<pcl::Label>);
       *labels_ptr = labels;
       pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
       pcl::PlaneRefinementComparator<PointT, pcl::Normal, pcl::Label>::Ptr refinement_compare (new pcl::PlaneRefinementComparator<PointT, pcl::Normal, pcl::Label>());
@@ -347,8 +346,6 @@ class HRCSSegmentation
       mps.setInputNormals (normal_cloud);
       mps.refine (model_coefficients,
                   inlier_indices,
-                  centroids,
-                  covariances,
                   labels_ptr,
                   region_indices);
       
@@ -358,7 +355,7 @@ class HRCSSegmentation
       {
         if (region_index.indices.size () > 1000)
         {
-          for (size_t j = 0; j < region_index.indices.size (); j++)
+          for (std::size_t j = 0; j < region_index.indices.size (); j++)
           {
             // Check to see if it has already been labeled
             if (ground_image->points[region_index.indices[j]].g == ground_image->points[region_index.indices[j]].b)
@@ -367,8 +364,8 @@ class HRCSSegmentation
                                        cloud->points[region_index.indices[j]].y,
                                        cloud->points[region_index.indices[j]].z);
               ground_cloud->points.push_back (ground_pt);
-              ground_image->points[region_index.indices[j]].r = static_cast<pcl::uint8_t> ((cloud->points[region_index.indices[j]].r + 255) / 2);
-              ground_image->points[region_index.indices[j]].g = static_cast<pcl::uint8_t> ((cloud->points[region_index.indices[j]].g + 255) / 2);
+              ground_image->points[region_index.indices[j]].r = static_cast<std::uint8_t> ((cloud->points[region_index.indices[j]].r + 255) / 2);
+              ground_image->points[region_index.indices[j]].g = static_cast<std::uint8_t> ((cloud->points[region_index.indices[j]].g + 255) / 2);
               label_image->points[region_index.indices[j]].r = 128;
               label_image->points[region_index.indices[j]].g = 128;
               label_image->points[region_index.indices[j]].b = 0;
@@ -382,7 +379,7 @@ class HRCSSegmentation
       Eigen::Vector4f ground_plane_params (1.0, 0.0, 0.0, 1.0);
       Eigen::Vector4f ground_centroid (0.0, 0.0, 0.0, 0.0);
       
-      if (ground_cloud->points.size () > 0)
+      if (!ground_cloud->points.empty ())
       {
         ground_centroid = centroids[0];
         ground_plane_params = Eigen::Vector4f (model_coefficients[0].values[0], model_coefficients[0].values[1], model_coefficients[0].values[2], model_coefficients[0].values[3]);
@@ -391,10 +388,10 @@ class HRCSSegmentation
       if (detect_obstacles)
       {
         pcl::PointCloud<PointT>::CloudVectorType clusters;
-        if (ground_cloud->points.size () > 0)
+        if (!ground_cloud->points.empty ())
         {
-          boost::shared_ptr<std::set<uint32_t> > plane_labels = boost::make_shared<std::set<uint32_t> > ();
-          for (size_t i = 0; i < region_indices.size (); ++i)
+          pcl::EuclideanClusterComparator<PointT, pcl::Label>::ExcludeLabelSetPtr plane_labels (new pcl::EuclideanClusterComparator<PointT, pcl::Label>::ExcludeLabelSet);
+          for (std::size_t i = 0; i < region_indices.size (); ++i)
             if ((region_indices[i].indices.size () > mps.getMinInliers ()))
               plane_labels->insert (i);
         
@@ -428,7 +425,7 @@ class HRCSSegmentation
               if ((ptp_dist > 0.5) && (ptp_dist < 3.0))
               {
               
-                for (size_t j = 0; j < euclidean_label_index.indices.size (); j++)
+                for (std::size_t j = 0; j < euclidean_label_index.indices.size (); j++)
                 {
                   ground_image->points[euclidean_label_index.indices[j]].r = 255;
                   label_image->points[euclidean_label_index.indices[j]].r = 255;
@@ -445,11 +442,11 @@ class HRCSSegmentation
       }
 
       // note the NAN points in the image as well
-      for (size_t i = 0; i < cloud->points.size (); i++)
+      for (std::size_t i = 0; i < cloud->points.size (); i++)
       {
         if (!pcl::isFinite (cloud->points[i]))
         {
-          ground_image->points[i].b = static_cast<pcl::uint8_t>((cloud->points[i].b + 255) / 2);
+          ground_image->points[i].b = static_cast<std::uint8_t>((cloud->points[i].b + 255) / 2);
           label_image->points[i].r = 0;
           label_image->points[i].g = 0;
           label_image->points[i].b = 255;

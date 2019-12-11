@@ -658,7 +658,7 @@ pcl::visualization::PCLVisualizer::addText3D (
 
   // check all or an individual viewport for a similar id
   rens_->InitTraversal ();
-  for (size_t i = viewport; rens_->GetNextItem () != NULL; ++i)
+  for (std::size_t i = viewport; rens_->GetNextItem (); ++i)
   {
     const std::string uid = tid + std::string (i, '*');
     if (contains (uid))
@@ -685,7 +685,7 @@ pcl::visualization::PCLVisualizer::addText3D (
   rens_->InitTraversal ();
   vtkRenderer* renderer;
   int i = 0;
-  while ((renderer = rens_->GetNextItem ()) != NULL)
+  while ((renderer = rens_->GetNextItem ()))
   {
     // Should we add the actor to all renderers or just to i-nth renderer?
     if (viewport == 0 || viewport == i)
@@ -745,7 +745,7 @@ pcl::visualization::PCLVisualizer::addText3D (
 
   // check all or an individual viewport for a similar id
   rens_->InitTraversal ();
-  for (size_t i = viewport; rens_->GetNextItem () != NULL; ++i)
+  for (std::size_t i = viewport; rens_->GetNextItem (); ++i)
   {
     const std::string uid = tid + std::string (i, '*');
     if (contains (uid))
@@ -779,7 +779,7 @@ pcl::visualization::PCLVisualizer::addText3D (
   rens_->InitTraversal ();
   int i = 0;
   for ( vtkRenderer* renderer = rens_->GetNextItem ();
-        renderer != NULL;
+        renderer;
         renderer = rens_->GetNextItem (), ++i)
   {
     if (viewport == 0 || viewport == i)
@@ -837,7 +837,7 @@ pcl::visualization::PCLVisualizer::addPointCloudNormals (
 
 
   vtkIdType nr_normals = 0;
-  float* pts = 0;
+  float* pts = nullptr;
 
   // If the cloud is organized, then distribute the normal step in both directions
   if (cloud->isOrganized () && normals->isOrganized ())
@@ -971,7 +971,7 @@ pcl::visualization::PCLVisualizer::addPointCloudPrincipalCurvatures (
   line_2_colors->SetName ("Colors");
 
   // Create the first sets of lines
-  for (size_t i = 0; i < cloud->points.size (); i+=level)
+  for (std::size_t i = 0; i < cloud->points.size (); i+=level)
   {
     PointT p = cloud->points[i];
     p.x += (pcs->points[i].pc1 * pcs->points[i].principal_curvature[0]) * scale;
@@ -990,7 +990,7 @@ pcl::visualization::PCLVisualizer::addPointCloudPrincipalCurvatures (
   line_1_data->GetCellData ()->SetScalars (line_1_colors);
 
   // Create the second sets of lines
-  for (size_t i = 0; i < cloud->points.size (); i += level)
+  for (std::size_t i = 0; i < cloud->points.size (); i += level)
   {
     Eigen::Vector3f pc (pcs->points[i].principal_curvature[0],
                         pcs->points[i].principal_curvature[1],
@@ -1121,7 +1121,7 @@ pcl::visualization::PCLVisualizer::addCorrespondences (
   pcl::Correspondences corrs;
   corrs.resize (correspondences.size ());
 
-  size_t index = 0;
+  std::size_t index = 0;
   for (auto &corr : corrs)
   {
     corr.index_query = index;
@@ -1155,7 +1155,8 @@ pcl::visualization::PCLVisualizer::addCorrespondences (
   {
     PCL_WARN ("[addCorrespondences] A set of correspondences with id <%s> already exists! Please choose a different id and retry.\n", id.c_str ());
     return (false);
-  } else if (am_it == shape_actor_map_->end () && overwrite)
+  }
+  if (am_it == shape_actor_map_->end () && overwrite)
   {
     overwrite = false; // Correspondences doesn't exist, add them instead of updating them
   }
@@ -1195,7 +1196,7 @@ pcl::visualization::PCLVisualizer::addCorrespondences (
 
   int j = 0;
   // Draw lines between the best corresponding points
-  for (size_t i = 0; i < correspondences.size (); i += nth, ++j)
+  for (std::size_t i = 0; i < correspondences.size (); i += nth, ++j)
   {
     if (correspondences[i].index_match == -1)
     {
@@ -1307,8 +1308,7 @@ pcl::visualization::PCLVisualizer::fromHandlersToScreen (
   // Get the colors from the handler
   bool has_colors = false;
   double minmax[2];
-  vtkSmartPointer<vtkDataArray> scalars;
-  if (color_handler.getColor (scalars))
+  if (auto scalars = color_handler.getColor ())
   {
     polydata->GetPointData ()->SetScalars (scalars);
     scalars->GetRange (minmax);
@@ -1370,8 +1370,7 @@ pcl::visualization::PCLVisualizer::fromHandlersToScreen (
   // Get the colors from the handler
   bool has_colors = false;
   double minmax[2];
-  vtkSmartPointer<vtkDataArray> scalars;
-  if (color_handler->getColor (scalars))
+  if (auto scalars = color_handler->getColor ())
   {
     polydata->GetPointData ()->SetScalars (scalars);
     scalars->GetRange (minmax);
@@ -1434,8 +1433,7 @@ pcl::visualization::PCLVisualizer::fromHandlersToScreen (
   // Get the colors from the handler
   bool has_colors = false;
   double minmax[2];
-  vtkSmartPointer<vtkDataArray> scalars;
-  if (color_handler.getColor (scalars))
+  if (auto scalars = color_handler.getColor ())
   {
     polydata->GetPointData ()->SetScalars (scalars);
     scalars->GetRange (minmax);
@@ -1590,8 +1588,7 @@ pcl::visualization::PCLVisualizer::updatePointCloud (const typename pcl::PointCl
   // Get the colors from the handler
   bool has_colors = false;
   double minmax[2];
-  vtkSmartPointer<vtkDataArray> scalars;
-  if (color_handler.getColor (scalars))
+  if (auto scalars = color_handler.getColor ())
   {
     // Update the data
     polydata->GetPointData ()->SetScalars (scalars);
@@ -1631,16 +1628,16 @@ pcl::visualization::PCLVisualizer::addPolygonMesh (
   int rgb_idx = -1;
   std::vector<pcl::PCLPointField> fields;
   vtkSmartPointer<vtkUnsignedCharArray> colors;
-  rgb_idx = pcl::getFieldIndex (*cloud, "rgb", fields);
+  rgb_idx = pcl::getFieldIndex<PointT> ("rgb", fields);
   if (rgb_idx == -1)
-    rgb_idx = pcl::getFieldIndex (*cloud, "rgba", fields);
+    rgb_idx = pcl::getFieldIndex<PointT> ("rgba", fields);
   if (rgb_idx != -1)
   {
     colors = vtkSmartPointer<vtkUnsignedCharArray>::New ();
     colors->SetNumberOfComponents (3);
     colors->SetName ("Colors");
-    uint32_t offset = fields[rgb_idx].offset;
-    for (size_t i = 0; i < cloud->size (); ++i)
+    std::uint32_t offset = fields[rgb_idx].offset;
+    for (std::size_t i = 0; i < cloud->size (); ++i)
     {
       if (!isFinite (cloud->points[i]))
         continue;
@@ -1701,26 +1698,26 @@ pcl::visualization::PCLVisualizer::addPolygonMesh (
     vtkSmartPointer<vtkCellArray> cell_array = vtkSmartPointer<vtkCellArray>::New ();
     vtkIdType *cell = cell_array->WritePointer (vertices.size (), vertices.size () * (max_size_of_polygon + 1));
     int idx = 0;
-    if (lookup.size () > 0)
+    if (!lookup.empty ())
     {
-      for (size_t i = 0; i < vertices.size (); ++i, ++idx)
+      for (std::size_t i = 0; i < vertices.size (); ++i, ++idx)
       {
-        size_t n_points = vertices[i].vertices.size ();
+        std::size_t n_points = vertices[i].vertices.size ();
         *cell++ = n_points;
         //cell_array->InsertNextCell (n_points);
-        for (size_t j = 0; j < n_points; j++, ++idx)
+        for (std::size_t j = 0; j < n_points; j++, ++idx)
           *cell++ = lookup[vertices[i].vertices[j]];
           //cell_array->InsertCellPoint (lookup[vertices[i].vertices[j]]);
       }
     }
     else
     {
-      for (size_t i = 0; i < vertices.size (); ++i, ++idx)
+      for (std::size_t i = 0; i < vertices.size (); ++i, ++idx)
       {
-        size_t n_points = vertices[i].vertices.size ();
+        std::size_t n_points = vertices[i].vertices.size ();
         *cell++ = n_points;
         //cell_array->InsertNextCell (n_points);
-        for (size_t j = 0; j < n_points; j++, ++idx)
+        for (std::size_t j = 0; j < n_points; j++, ++idx)
           *cell++ = vertices[i].vertices[j];
           //cell_array->InsertCellPoint (vertices[i].vertices[j]);
       }
@@ -1740,17 +1737,17 @@ pcl::visualization::PCLVisualizer::addPolygonMesh (
   else
   {
     vtkSmartPointer<vtkPolygon> polygon = vtkSmartPointer<vtkPolygon>::New ();
-    size_t n_points = vertices[0].vertices.size ();
+    std::size_t n_points = vertices[0].vertices.size ();
     polygon->GetPointIds ()->SetNumberOfIds (n_points - 1);
 
-    if (lookup.size () > 0)
+    if (!lookup.empty ())
     {
-      for (size_t j = 0; j < (n_points - 1); ++j)
+      for (std::size_t j = 0; j < (n_points - 1); ++j)
         polygon->GetPointIds ()->SetId (j, lookup[vertices[0].vertices[j]]);
     }
     else
     {
-      for (size_t j = 0; j < (n_points - 1); ++j)
+      for (std::size_t j = 0; j < (n_points - 1); ++j)
         polygon->GetPointIds ()->SetId (j, vertices[0].vertices[j]);
     }
     vtkSmartPointer<vtkUnstructuredGrid> poly_grid;
@@ -1848,14 +1845,14 @@ pcl::visualization::PCLVisualizer::updatePolygonMesh (
     return (false);
   int rgb_idx = -1;
   std::vector<pcl::PCLPointField> fields;
-  rgb_idx = pcl::getFieldIndex (*cloud, "rgb", fields);
+  rgb_idx = pcl::getFieldIndex<PointT> ("rgb", fields);
   if (rgb_idx == -1)
-    rgb_idx = pcl::getFieldIndex (*cloud, "rgba", fields);
+    rgb_idx = pcl::getFieldIndex<PointT> ("rgba", fields);
   if (rgb_idx != -1 && colors)
   {
     int j = 0;
-    uint32_t offset = fields[rgb_idx].offset;
-    for (size_t i = 0; i < cloud->size (); ++i)
+    std::uint32_t offset = fields[rgb_idx].offset;
+    for (std::size_t i = 0; i < cloud->size (); ++i)
     {
       if (!isFinite (cloud->points[i]))
         continue;
@@ -1878,23 +1875,23 @@ pcl::visualization::PCLVisualizer::updatePolygonMesh (
   cells = vtkSmartPointer<vtkCellArray>::New ();
   vtkIdType *cell = cells->WritePointer (verts.size (), verts.size () * (max_size_of_polygon + 1));
   int idx = 0;
-  if (lookup.size () > 0)
+  if (!lookup.empty ())
   {
-    for (size_t i = 0; i < verts.size (); ++i, ++idx)
+    for (std::size_t i = 0; i < verts.size (); ++i, ++idx)
     {
-      size_t n_points = verts[i].vertices.size ();
+      std::size_t n_points = verts[i].vertices.size ();
       *cell++ = n_points;
-      for (size_t j = 0; j < n_points; j++, cell++, ++idx)
+      for (std::size_t j = 0; j < n_points; j++, cell++, ++idx)
         *cell = lookup[verts[i].vertices[j]];
     }
   }
   else
   {
-    for (size_t i = 0; i < verts.size (); ++i, ++idx)
+    for (std::size_t i = 0; i < verts.size (); ++i, ++idx)
     {
-      size_t n_points = verts[i].vertices.size ();
+      std::size_t n_points = verts[i].vertices.size ();
       *cell++ = n_points;
-      for (size_t j = 0; j < n_points; j++, cell++, ++idx)
+      for (std::size_t j = 0; j < n_points; j++, cell++, ++idx)
         *cell = verts[i].vertices[j];
     }
   }

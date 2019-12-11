@@ -53,7 +53,8 @@ namespace pcl
     class FrameWrapper
     {
       public:
-        typedef boost::shared_ptr<FrameWrapper> Ptr;
+        using Ptr = boost::shared_ptr<FrameWrapper>;
+        using ConstPtr = boost::shared_ptr<const FrameWrapper>;
 
         virtual
         ~FrameWrapper() = default;
@@ -74,7 +75,7 @@ namespace pcl
         getFrameID () const = 0;
 
         // Microseconds from some arbitrary start point
-        virtual pcl::uint64_t
+        virtual std::uint64_t
         getTimestamp () const = 0;
     };
 

@@ -53,8 +53,8 @@ using pcl::octree::OctreeKey;
 struct OctreeIteratorBaseTest : public testing::Test
 {
   // types
-  typedef OctreeBase<int> OctreeBaseT;
-  typedef OctreeIteratorBase<OctreeBaseT> OctreeIteratorBaseT;
+  using OctreeBaseT = OctreeBase<int>;
+  using OctreeIteratorBaseT = OctreeIteratorBase<OctreeBaseT>;
 
 
   // methods
@@ -103,7 +103,7 @@ template<typename T>
 struct OctreeIteratorTest : public OctreeIteratorBaseTest
 {
   // types
-  typedef OctreeKey OctreeKeyT;
+  using OctreeKeyT = OctreeKey;
 
   // methods
   OctreeIteratorTest () : it_ (&octree_, tree_depth_) {}
@@ -131,7 +131,7 @@ struct OctreeIteratorTest : public OctreeIteratorBaseTest
     it_.reset ();
 
     // increment the iterator 4 times
-    for (uint8_t i = 0; i < 4; ++it_, ++i);
+    for (std::uint8_t i = 0; i < 4; ++it_, ++i);
   }
 
   // members
@@ -148,11 +148,12 @@ using pcl::octree::OctreeLeafNodeDepthFirstIterator;
 using pcl::octree::OctreeFixedDepthIterator;
 using pcl::octree::OctreeLeafNodeBreadthFirstIterator;
 
-typedef testing::Types<OctreeDepthFirstIterator<OctreeBase<int> >,
-                       OctreeBreadthFirstIterator<OctreeBase<int> >,
-                       OctreeLeafNodeDepthFirstIterator<OctreeBase<int> >,
-                       OctreeFixedDepthIterator<OctreeBase<int> >,
-                       OctreeLeafNodeBreadthFirstIterator<OctreeBase<int> > > OctreeIteratorTypes;
+using OctreeIteratorTypes = testing::Types
+        <OctreeDepthFirstIterator<OctreeBase<int> >,
+         OctreeBreadthFirstIterator<OctreeBase<int> >,
+         OctreeLeafNodeDepthFirstIterator<OctreeBase<int> >,
+         OctreeFixedDepthIterator<OctreeBase<int> >,
+         OctreeLeafNodeBreadthFirstIterator<OctreeBase<int> > >;
 TYPED_TEST_CASE (OctreeIteratorTest, OctreeIteratorTypes);
 
 TYPED_TEST (OctreeIteratorTest, CopyConstructor)
@@ -207,7 +208,7 @@ TYPED_TEST (OctreeIteratorTest, CopyAssignment)
 struct OctreeBaseBeginEndIteratorsTest : public testing::Test
 {
   // Types
-  typedef OctreeBase<int> OctreeT;
+  using OctreeT = OctreeBase<int>;
 
   // Methods
   void SetUp () override
@@ -221,7 +222,7 @@ struct OctreeBaseBeginEndIteratorsTest : public testing::Test
     // 2 bits per key
     // The 3 LSBs of the id match the 1 LSB of the x, y and z keys
     // The 3 MSBs of the id match the 1 MSB of the x, y and z keys
-    for (size_t i = 0; i < 64u; ++i)
+    for (std::size_t i = 0; i < 64u; ++i)
     {
       const OctreeKey key (((i >> 4) & 0b10u) | ((i >> 2) & 1u), // x
                            ((i >> 3) & 0b10u) | ((i >> 1) & 1u), // y
@@ -761,7 +762,7 @@ TEST_F (OctreeBaseIteratorsForLoopTest, LeafNodeBreadthFirstIterator)
 struct OctreeBaseWalkThroughIteratorsTest : public testing::Test
 {
   // Types
-  typedef OctreeBase<int> OctreeT;
+  using OctreeT = OctreeBase<int>;
 
   // Methods
   void SetUp () override
@@ -986,7 +987,7 @@ struct OctreeBaseIteratorsPrePostTest : public OctreeBaseBeginEndIteratorsTest
 TEST_F (OctreeBaseIteratorsPrePostTest, DefaultIterator)
 {
   // Useful types
-  typedef OctreeT::Iterator IteratorT;
+  using IteratorT = OctreeT::Iterator;
 
   // Default initialization
   IteratorT it_a_pre;
@@ -1008,7 +1009,7 @@ TEST_F (OctreeBaseIteratorsPrePostTest, DefaultIterator)
 TEST_F (OctreeBaseIteratorsPrePostTest, LeafNodeDepthFirstIterator)
 {
   // Useful types
-  typedef OctreeT::LeafNodeDepthFirstIterator IteratorT;
+  using IteratorT = OctreeT::LeafNodeDepthFirstIterator;
 
   // Default initialization
   IteratorT it_a_pre;
@@ -1030,7 +1031,7 @@ TEST_F (OctreeBaseIteratorsPrePostTest, LeafNodeDepthFirstIterator)
 TEST_F (OctreeBaseIteratorsPrePostTest, DepthFirstIterator)
 {
   // Useful types
-  typedef OctreeT::DepthFirstIterator IteratorT;
+  using IteratorT = OctreeT::DepthFirstIterator;
 
   // Default initialization
   IteratorT it_a_pre;
@@ -1052,7 +1053,7 @@ TEST_F (OctreeBaseIteratorsPrePostTest, DepthFirstIterator)
 TEST_F (OctreeBaseIteratorsPrePostTest, BreadthFirstIterator)
 {
   // Useful types
-  typedef OctreeT::BreadthFirstIterator IteratorT;
+  using IteratorT = OctreeT::BreadthFirstIterator;
 
   // Default initialization
   IteratorT it_a_pre;
@@ -1074,7 +1075,7 @@ TEST_F (OctreeBaseIteratorsPrePostTest, BreadthFirstIterator)
 TEST_F (OctreeBaseIteratorsPrePostTest, FixedDepthIterator)
 {
   // Useful types
-  typedef OctreeT::FixedDepthIterator IteratorT;
+  using IteratorT = OctreeT::FixedDepthIterator;
 
   // Default initialization
   IteratorT it_a_pre;
@@ -1103,7 +1104,7 @@ TEST_F (OctreeBaseIteratorsPrePostTest, FixedDepthIterator)
 TEST_F (OctreeBaseIteratorsPrePostTest, LeafNodeBreadthFirstIterator)
 {
   // Useful types
-  typedef OctreeT::LeafNodeBreadthFirstIterator IteratorT;
+  using IteratorT = OctreeT::LeafNodeBreadthFirstIterator;
 
   // Default initialization
   IteratorT it_a_pre;
@@ -1130,9 +1131,9 @@ struct OctreePointCloudAdjacencyBeginEndIteratorsTest
   : public testing::Test
 {
   // Types
-  typedef pcl::PointXYZ PointT;
-  typedef pcl::PointCloud<PointT> PointCloudT;
-  typedef pcl::octree::OctreePointCloudAdjacency<PointT> OctreeT;
+  using PointT = pcl::PointXYZ;
+  using PointCloudT = pcl::PointCloud<PointT>;
+  using OctreeT = pcl::octree::OctreePointCloudAdjacency<PointT>;
 
   // Methods
   OctreePointCloudAdjacencyBeginEndIteratorsTest ()
@@ -1148,7 +1149,7 @@ struct OctreePointCloudAdjacencyBeginEndIteratorsTest
     // Generate Point Cloud
     typename PointCloudT::Ptr cloud (new PointCloudT (100, 1));
     const float max_inv = 1.f / float (RAND_MAX);
-    for (size_t i = 0; i < 100; ++i)
+    for (std::size_t i = 0; i < 100; ++i)
     {
       const PointT pt (10.f * (float (std::rand ()) * max_inv - .5f),
                        10.f * (float (std::rand ()) * max_inv - .5f),
@@ -1348,9 +1349,9 @@ struct OctreePointCloudSierpinskiTest
   : public testing::Test
 {
   // Types
-  typedef pcl::PointXYZ PointT;
-  typedef pcl::PointCloud<PointT> PointCloudT;
-  typedef pcl::octree::OctreePointCloud<PointT> OctreeT;
+  using PointT = pcl::PointXYZ;
+  using PointCloudT = pcl::PointCloud<PointT>;
+  using OctreeT = pcl::octree::OctreePointCloud<PointT>;
 
   // Methods
   OctreePointCloudSierpinskiTest ()

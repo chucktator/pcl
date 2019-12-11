@@ -54,7 +54,7 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
   std::size_t number_of_comment_statements = 0;
 
   format_type format = pcl::io::ply::unknown;
-  std::vector< boost::shared_ptr<element> > elements;
+  std::vector<std::shared_ptr<element>> elements;
 
   char line_delim = '\n';
   int char_ignore_count = 0;
@@ -182,14 +182,12 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
           }
           return false;
         }
-        std::vector< boost::shared_ptr<element> >::const_iterator iterator;
-        for (iterator = elements.begin (); iterator != elements.end (); ++iterator)
+        auto iterator = elements.cbegin ();
+        while (iterator != elements.cend ())
         {
-          const struct element& element = *(iterator->get ());
-          if (element.name == name)
-          {
+          if ((*iterator)->name == name)
             break;
-          }
+          ++iterator;
         }
         if (iterator != elements.end ())
         {
@@ -205,12 +203,8 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
         {
           element_callbacks = element_definition_callbacks_ (name, count);
         }
-        boost::shared_ptr<element> element_ptr (new element (name, 
-                                                                count, 
-                                                                boost::get<0>(element_callbacks), 
-                                                                boost::get<1>(element_callbacks)));
-        elements.emplace_back(element_ptr);
-        current_element_ = element_ptr.get ();
+        elements.emplace_back(new element (name, count, std::get<0>(element_callbacks), std::get<1>(element_callbacks)));
+        current_element_ = elements.back ().get ();
       }
 
       // property
@@ -248,14 +242,12 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
             }
             return false;
           }
-          std::vector< boost::shared_ptr<property> >::const_iterator iterator;
-          for (iterator = current_element_->properties.begin (); 
-               iterator != current_element_->properties.end (); 
-               ++iterator)
+          auto iterator = current_element_->properties.cbegin ();
+          while (iterator != current_element_->properties.cend ())
           {
-            const struct property& property = *(iterator->get ());
-            if (property.name == name)
+            if ((*iterator)->name == name)
               break;
+            ++iterator;
           }
           if (iterator != current_element_->properties.end ())
           {
@@ -326,14 +318,12 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
               error_callback_ (line_number_, "parse error");
             return false;
           }
-          std::vector< boost::shared_ptr<property> >::const_iterator iterator;
-          for (iterator = current_element_->properties.begin (); 
-               iterator != current_element_->properties.end (); 
-               ++iterator) 
+          auto iterator = current_element_->properties.cbegin ();
+          while (iterator != current_element_->properties.cend ())
           {
-            const struct property& property = *(iterator->get ());
-            if (property.name == name)
+            if ((*iterator)->name == name)
               break;
+            ++iterator;
           }
           if (iterator != current_element_->properties.end ())
           {
@@ -343,7 +333,7 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
           }
           if ((size_type_string == type_traits<uint8>::name ()) || (size_type_string == type_traits<uint8>::old_name ()))
           {
-            typedef uint8 size_type;
+            using size_type = uint8;
             if ((scalar_type_string == type_traits<int8>::name ()) || (scalar_type_string == type_traits<int8>::old_name ()))
             {
               parse_list_property_definition<size_type, int8>(name);
@@ -387,7 +377,7 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
           }
           else if ((size_type_string == type_traits<uint16>::name ()) || (size_type_string == type_traits<uint16>::old_name ()))
           {
-            typedef uint16 size_type;
+            using size_type = uint16;
             if ((scalar_type_string == type_traits<int8>::name ()) || (scalar_type_string == type_traits<int8>::old_name ()))
             {
               parse_list_property_definition<size_type, int8>(name);
@@ -429,7 +419,7 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
           }
           else if ((size_type_string == type_traits<uint32>::name ()) || (size_type_string == type_traits<uint32>::old_name ()))
           {
-            typedef uint32 size_type;
+            using size_type = uint32;
             if ((scalar_type_string == type_traits<int8>::name ()) || (scalar_type_string == type_traits<int8>::old_name ()))
             {
               parse_list_property_definition<size_type, int8>(name);
@@ -524,8 +514,8 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
   // ascii
   if (format == ascii_format)
   {
-    for (std::vector< boost::shared_ptr<element> >::const_iterator element_iterator = elements.begin (); 
-         element_iterator != elements.end (); 
+    for (auto element_iterator = elements.cbegin ();
+         element_iterator != elements.cend ();
          ++element_iterator)
     {
       struct element& element = *(element_iterator->get ());
@@ -544,8 +534,8 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
         std::istringstream stringstream (line);
         stringstream.unsetf (std::ios_base::skipws);
         stringstream >> std::ws;
-        for (std::vector< boost::shared_ptr<property> >::const_iterator property_iterator = element.properties.begin (); 
-             property_iterator != element.properties.end (); 
+        for (auto property_iterator = element.properties.cbegin ();
+             property_iterator != element.properties.cend ();
              ++property_iterator)
         {
           struct property& property = *(property_iterator->get ());
@@ -573,52 +563,49 @@ bool pcl::io::ply::ply_parser::parse (const std::string& filename)
   }
 
   // binary
-  else
-  {
-    std::streampos data_start = istream.tellg ();
-    istream.close ();
-    istream.open (filename.c_str (), std::ios::in | std::ios::binary);
-    istream.seekg (data_start);
+  std::streampos data_start = istream.tellg ();
+  istream.close ();
+  istream.open (filename.c_str (), std::ios::in | std::ios::binary);
+  istream.seekg (data_start);
 
-    for (std::vector< boost::shared_ptr<element> >::const_iterator element_iterator = elements.begin (); 
-         element_iterator != elements.end (); 
-         ++element_iterator)
+  for (auto element_iterator = elements.cbegin ();
+       element_iterator != elements.cend ();
+       ++element_iterator)
+  {
+    struct element& element = *(element_iterator->get ());
+    for (std::size_t element_index = 0; element_index < element.count; ++element_index)
     {
-      struct element& element = *(element_iterator->get ());
-      for (std::size_t element_index = 0; element_index < element.count; ++element_index)
+      if (element.begin_element_callback) {
+        element.begin_element_callback ();
+      }
+      for (auto property_iterator = element.properties.cbegin ();
+           property_iterator != element.properties.cend ();
+           ++property_iterator)
       {
-        if (element.begin_element_callback) {
-          element.begin_element_callback ();
-        }
-        for (std::vector< boost::shared_ptr<property> >::const_iterator property_iterator = element.properties.begin (); 
-             property_iterator != element.properties.end (); 
-             ++property_iterator)
+        struct property& property = *(property_iterator->get ());
+        if (!property.parse (*this, format, istream))
         {
-          struct property& property = *(property_iterator->get ());
-          if (!property.parse (*this, format, istream))
-          {
-            return false;
-          }
-        }
-        if (element.end_element_callback)
-        {
-          element.end_element_callback ();
+          return false;
         }
       }
-    }
-    if (istream.fail () || istream.bad ())
-    {
-      if (error_callback_)
+      if (element.end_element_callback)
       {
-        error_callback_ (line_number_, "parse error: failed to read from the binary stream");
+        element.end_element_callback ();
       }
-      return false;
     }
-    if (istream.rdbuf ()->sgetc () != std::char_traits<char>::eof ())
-    {
-      if (warning_callback_)
-        warning_callback_ (line_number_, "ignoring extra data at the end of binary stream");
-    }
-    return true;
   }
+  if (istream.fail () || istream.bad ())
+  {
+    if (error_callback_)
+    {
+      error_callback_ (line_number_, "parse error: failed to read from the binary stream");
+    }
+    return false;
+  }
+  if (istream.rdbuf ()->sgetc () != std::char_traits<char>::eof ())
+  {
+    if (warning_callback_)
+      warning_callback_ (line_number_, "ignoring extra data at the end of binary stream");
+  }
+  return true;
 }

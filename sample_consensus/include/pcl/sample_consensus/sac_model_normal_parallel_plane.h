@@ -42,6 +42,7 @@
 
 #include <pcl/sample_consensus/sac_model_normal_plane.h>
 #include <pcl/sample_consensus/model_types.h>
+#include <pcl/pcl_macros.h>
 
 namespace pcl
 {
@@ -50,7 +51,8 @@ namespace pcl
     * this means that checking for inliers will not only involve a "distance to
     * model" criterion, but also an additional "maximum angular deviation"
     * between the plane's normal and the inlier points normals. In addition,
-    * the plane normal must lie parallel to an user-specified axis.
+    * the plane <b>normal</b> must lie parallel to a user-specified axis.
+    * This means that the plane itself will lie perpendicular to that axis, similar to \link pcl::SampleConsensusModelPerpendicularPlane SACMODEL_PERPENDICULAR_PLANE \endlink.
     *
     * The model coefficients are defined as:
     *   - \b a : the X coordinate of the plane's normal (normalized)
@@ -90,14 +92,15 @@ namespace pcl
       using SampleConsensusModelFromNormals<PointT, PointNT>::normal_distance_weight_;
       using SampleConsensusModel<PointT>::error_sqr_dists_;
 
-      typedef typename SampleConsensusModel<PointT>::PointCloud PointCloud;
-      typedef typename SampleConsensusModel<PointT>::PointCloudPtr PointCloudPtr;
-      typedef typename SampleConsensusModel<PointT>::PointCloudConstPtr PointCloudConstPtr;
+      using PointCloud = typename SampleConsensusModel<PointT>::PointCloud;
+      using PointCloudPtr = typename SampleConsensusModel<PointT>::PointCloudPtr;
+      using PointCloudConstPtr = typename SampleConsensusModel<PointT>::PointCloudConstPtr;
 
-      typedef typename SampleConsensusModelFromNormals<PointT, PointNT>::PointCloudNPtr PointCloudNPtr;
-      typedef typename SampleConsensusModelFromNormals<PointT, PointNT>::PointCloudNConstPtr PointCloudNConstPtr;
+      using PointCloudNPtr = typename SampleConsensusModelFromNormals<PointT, PointNT>::PointCloudNPtr;
+      using PointCloudNConstPtr = typename SampleConsensusModelFromNormals<PointT, PointNT>::PointCloudNConstPtr;
 
-      typedef boost::shared_ptr<SampleConsensusModelNormalParallelPlane> Ptr;
+      using Ptr = boost::shared_ptr<SampleConsensusModelNormalParallelPlane<PointT, PointNT> >;
+      using ConstPtr = boost::shared_ptr<const SampleConsensusModelNormalParallelPlane<PointT, PointNT>>;
 
       /** \brief Constructor for base SampleConsensusModelNormalParallelPlane.
         * \param[in] cloud the input point cloud dataset
@@ -155,7 +158,7 @@ namespace pcl
         * \note You need to specify an angle > 0 in order to activate the axis-angle constraint!
         */
       inline void
-      setEpsAngle (const double ea) { eps_angle_ = ea; cos_angle_ = fabs (cos (ea));}
+      setEpsAngle (const double ea) { eps_angle_ = ea; cos_angle_ = std::abs (std::cos (ea));}
 
       /** \brief Get the angle epsilon (delta) threshold. */
       inline double
@@ -181,11 +184,11 @@ namespace pcl
       inline double
       getEpsDist () const { return (eps_dist_); }
 
-      /** \brief Return an unique id for this model (SACMODEL_NORMAL_PARALLEL_PLANE). */
+      /** \brief Return a unique id for this model (SACMODEL_NORMAL_PARALLEL_PLANE). */
       inline pcl::SacModel
       getModelType () const override { return (SACMODEL_NORMAL_PARALLEL_PLANE); }
 
-    	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    	PCL_MAKE_ALIGNED_OPERATOR_NEW
 
     protected:
       using SampleConsensusModel<PointT>::sample_size_;

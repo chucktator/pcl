@@ -39,11 +39,6 @@
 #include <pcl/point_types.h>
 #include <pcl/common/time.h> //fps calculations
 #include <pcl/io/openni_grabber.h>
-#include <boost/thread/condition.hpp>
-#include <boost/circular_buffer.hpp>
-#include <csignal>
-#include <limits>
-#include <thread>
 #include <pcl/io/lzf_image_io.h>
 #include <pcl/visualization/boost.h>
 #include <pcl/visualization/common/float_image_utils.h>
@@ -52,13 +47,21 @@
 #include <pcl/console/parse.h>
 #include <pcl/visualization/mouse_event.h>
 
+#include <boost/circular_buffer.hpp>
+
+#include <csignal>
+#include <limits>
+#include <mutex>
+#include <thread>
+#include <memory>
+
 using namespace std;
 using namespace std::chrono_literals;
 using namespace pcl;
 using namespace pcl::console;
 
 bool global_visualize = true, is_done = false, save_data = false, toggle_one_frame_capture = false, visualize = true;
-boost::mutex io_mutex;
+std::mutex io_mutex;
 int nr_frames_total = 0;
 
 #if defined(__linux__) 
@@ -68,17 +71,14 @@ int nr_frames_total = 0;
 size_t 
 getTotalSystemMemory ()
 {
-  uint64_t pages = sysconf (_SC_AVPHYS_PAGES);
-  uint64_t page_size = sysconf (_SC_PAGE_SIZE);
+  std::uint64_t pages = sysconf (_SC_AVPHYS_PAGES);
+  std::uint64_t page_size = sysconf (_SC_PAGE_SIZE);
   print_info ("Total available memory size: %lluMB.\n", (pages * page_size) / 1048576);
-  if (pages * page_size > uint64_t (std::numeric_limits<size_t>::max ()))
+  if (pages * page_size > std::uint64_t (std::numeric_limits<std::size_t>::max ()))
   {
-    return std::numeric_limits<size_t>::max ();
+    return std::numeric_limits<std::size_t>::max ();
   }
-  else
-  {
-    return size_t (pages * page_size);
-  }
+  return std::size_t (pages * page_size);
 }
 
 const int BUFFER_SIZE = int (getTotalSystemMemory () / (640 * 480) / 2);
@@ -98,7 +98,7 @@ do \
     ++count; \
     if (now - last >= 1.0) \
     { \
-      cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff.getSize () << ", number of frames written so far: " << nr_frames_total << "\n"; \
+      std::cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff.getSize () << ", number of frames written so far: " << nr_frames_total << "\n"; \
       count = 0; \
       last = now; \
     } \
@@ -113,7 +113,7 @@ do \
     ++count; \
     if (now - last >= 1.0) \
     { \
-      cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff.getSize () << "\n"; \
+      std::cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff.getSize () << "\n"; \
       count = 0; \
       last = now; \
     } \
@@ -129,9 +129,9 @@ do \
     if (now - last >= 1.0) \
     { \
       if (visualize && global_visualize) \
-        cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff1.getSize () << " (w) / " << buff2.getSize () << " (v)\n"; \
+        std::cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff1.getSize () << " (w) / " << buff2.getSize () << " (v)\n"; \
       else \
-        cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff1.getSize () << " (w)\n"; \
+        std::cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff1.getSize () << " (w)\n"; \
       count = 0; \
       last = now; \
     } \
@@ -140,11 +140,11 @@ do \
 //////////////////////////////////////////////////////////////////////////////////////////
 struct Frame
 {
-  typedef boost::shared_ptr<Frame> Ptr;
-  typedef boost::shared_ptr<const Frame> ConstPtr;
+  using Ptr = std::shared_ptr<Frame>;
+  using ConstPtr = std::shared_ptr<const Frame>;
 
-  Frame (const boost::shared_ptr<openni_wrapper::Image> &_image,
-         const boost::shared_ptr<openni_wrapper::DepthImage> &_depth_image,
+  Frame (const openni_wrapper::Image::Ptr &_image,
+         const openni_wrapper::DepthImage::Ptr &_depth_image,
          const io::CameraParameters &_parameters_rgb,
          const io::CameraParameters &_parameters_depth,
          const boost::posix_time::ptime &_time)
@@ -155,8 +155,8 @@ struct Frame
     , time (_time) 
   {}
 
-  const boost::shared_ptr<openni_wrapper::Image> image;
-  const boost::shared_ptr<openni_wrapper::DepthImage> depth_image;
+  const openni_wrapper::Image::Ptr image;
+  const openni_wrapper::DepthImage::Ptr depth_image;
         
   io::CameraParameters parameters_rgb, parameters_depth;
 
@@ -174,7 +174,7 @@ class Buffer
     {
       bool retVal = false;
       {
-        boost::mutex::scoped_lock buff_lock (bmutex_);
+        std::lock_guard<std::mutex> buff_lock (bmutex_);
         if (!buffer_.full ())
           retVal = true;
         buffer_.push_back (frame);
@@ -188,14 +188,14 @@ class Buffer
     {
       Frame::ConstPtr cloud;
       {
-        boost::mutex::scoped_lock buff_lock (bmutex_);
+        std::unique_lock<std::mutex> buff_lock (bmutex_);
         while (buffer_.empty ())
         {
           if (is_done)
             break;
           {
-            boost::mutex::scoped_lock io_lock (io_mutex);
-            //cerr << "No data in buffer_ yet or buffer is empty." << endl;
+            std::lock_guard<std::mutex> io_lock (io_mutex);
+            //std::cerr << "No data in buffer_ yet or buffer is empty." << std::endl;
           }
           buff_empty_.wait (buff_lock);
         }
@@ -208,21 +208,21 @@ class Buffer
     inline bool 
     isFull ()
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
       return (buffer_.full ());
     }
 		
     inline bool
     isEmpty ()
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
     	return (buffer_.empty ());
     }
 		
     inline int 
     getSize ()
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
       return (int (buffer_.size ()));
     }
 		
@@ -235,14 +235,14 @@ class Buffer
     inline void 
     setCapacity (int buff_size)
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
       buffer_.set_capacity (buff_size);
     }
 
     inline void 
     clear ()
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
       buffer_.clear ();
     }
 
@@ -250,8 +250,8 @@ class Buffer
 		Buffer (const Buffer&) = delete;            // Disabled copy constructor
 		Buffer& operator =(const Buffer&) = delete; // Disabled assignment operator
 		
-    boost::mutex bmutex_;
-		boost::condition_variable buff_empty_;
+    std::mutex bmutex_;
+		std::condition_variable buff_empty_;
 		boost::circular_buffer<Frame::ConstPtr> buffer_;
 };
 
@@ -330,13 +330,13 @@ class Writer
       if (save_data && buf_.getSize () > 0)
       {
         {
-          boost::mutex::scoped_lock io_lock (io_mutex);
+          std::lock_guard<std::mutex> io_lock (io_mutex);
           print_info ("Writing remaining %ld clouds in the buffer to disk...\n", buf_.getSize ());
         }
         while (!buf_.isEmpty ())
         {
           {
-            boost::mutex::scoped_lock io_lock (io_mutex);
+            std::lock_guard<std::mutex> io_lock (io_mutex);
             print_info ("Clearing buffer... %ld remaining...\n", buf_.getSize ());
           }
           writeToDisk (buf_.popFront ());
@@ -348,7 +348,7 @@ class Writer
     Writer (Buffer &buf)
       : buf_ (buf)
     {
-      thread_.reset (new boost::thread (boost::bind (&Writer::receiveAndProcess, this)));
+      thread_.reset (new std::thread (&Writer::receiveAndProcess, this));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -356,13 +356,13 @@ class Writer
     stop ()
     {
       thread_->join ();
-      boost::mutex::scoped_lock io_lock (io_mutex);
+      std::lock_guard<std::mutex> io_lock (io_mutex);
       print_highlight ("Writer done.\n");
     }
 
   private:
     Buffer &buf_;
-    boost::shared_ptr<boost::thread> thread_;
+    std::shared_ptr<std::thread> thread_;
 };
 
 
@@ -372,8 +372,8 @@ class Driver
   private:
     //////////////////////////////////////////////////////////////////////////
     void
-    image_callback (const boost::shared_ptr<openni_wrapper::Image> &image, 
-                    const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image, 
+    image_callback (const openni_wrapper::Image::Ptr &image, 
+                    const openni_wrapper::DepthImage::Ptr &depth_image, 
                     float)
     {
       boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time ();
@@ -397,13 +397,13 @@ class Driver
 
       if ((save_data || toggle_one_frame_capture) && !buf_write_.pushBack (frame))
       {
-        boost::mutex::scoped_lock io_lock (io_mutex);
+        std::lock_guard<std::mutex> io_lock (io_mutex);
         print_warn ("Warning! Write buffer was full, overwriting data!\n");
       }
 
       if (global_visualize && visualize && !buf_vis_.pushBack (frame))
       {
-        boost::mutex::scoped_lock io_lock (io_mutex);
+        std::lock_guard<std::mutex> io_lock (io_mutex);
         print_warn ("Warning! Visualization buffer was full, overwriting data!\n");
       }
     }
@@ -412,7 +412,12 @@ class Driver
     void 
     grabAndSend ()
     {
-      boost::function<void (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>&, float) > image_cb = boost::bind (&Driver::image_callback, this, _1, _2, _3);
+      std::function<
+        void (const openni_wrapper::Image::Ptr&, const openni_wrapper::DepthImage::Ptr&, float)
+      > image_cb = [this] (const openni_wrapper::Image::Ptr& img, const openni_wrapper::DepthImage::Ptr& depth, float f)
+      {
+        image_callback (img, depth, f);
+      };
       boost::signals2::connection image_connection = grabber_.registerCallback (image_cb);
 
       grabber_.start ();
@@ -431,7 +436,7 @@ class Driver
       , buf_write_ (buf_write)
       , buf_vis_ (buf_vis)
     {
-      thread_.reset (new boost::thread (boost::bind (&Driver::grabAndSend, this)));
+      thread_.reset (new std::thread (&Driver::grabAndSend, this));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -439,7 +444,7 @@ class Driver
     stop ()
     {
       thread_->join ();
-      boost::mutex::scoped_lock io_lock (io_mutex);
+      std::lock_guard<std::mutex> io_lock (io_mutex);
       print_highlight ("Grabber done.\n");
     }
 
@@ -447,7 +452,7 @@ class Driver
     
     OpenNIGrabber& grabber_;
     Buffer &buf_write_, &buf_vis_;
-    boost::shared_ptr<boost::thread> thread_;
+    std::shared_ptr<std::thread> thread_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -496,7 +501,7 @@ class Viewer
           if (frame->image)
           {
             // Copy RGB data for visualization
-            static vector<unsigned char> rgb_data (frame->image->getWidth () * frame->image->getHeight () * 3);
+            static std::vector<unsigned char> rgb_data (frame->image->getWidth () * frame->image->getHeight () * 3);
             if (frame->image->getEncoding () != openni_wrapper::Image::RGB)
             {
               frame->image->fillRGB (frame->image->getWidth (), 
@@ -519,9 +524,9 @@ class Viewer
             unsigned char* data = visualization::FloatImageUtils::getVisualImage (
                 reinterpret_cast<const unsigned short*> (&frame->depth_image->getDepthMetaData ().Data ()[0]),
                   frame->depth_image->getWidth (), frame->depth_image->getHeight (),
-                  numeric_limits<unsigned short>::min (), 
+                  std::numeric_limits<unsigned short>::min (), 
                   // Scale so that the colors look brigher on screen
-                  numeric_limits<unsigned short>::max () / 10, 
+                  std::numeric_limits<unsigned short>::max () / 10, 
                   true);
 
             depth_image_viewer_->addRGBImage (data, 
@@ -557,7 +562,7 @@ class Viewer
     void
     stop ()
     {
-      boost::mutex::scoped_lock io_lock (io_mutex);
+      std::lock_guard<std::mutex> io_lock (io_mutex);
       print_highlight ("Viewer done.\n");
     }
 
@@ -614,41 +619,41 @@ class Viewer
     }
 
     Buffer &buf_;
-    boost::shared_ptr<visualization::ImageViewer> image_viewer_;
-    boost::shared_ptr<visualization::ImageViewer> depth_image_viewer_;
+    visualization::ImageViewer::Ptr image_viewer_;
+    visualization::ImageViewer::Ptr depth_image_viewer_;
     bool image_cld_init_, depth_image_cld_init_;
 };
 
 void
 usage (char ** argv)
 {
-  cout << "usage: " << argv[0] << " [(<device_id> [-visualize | -imagemode <mode>] | [-depthmode <mode>] | [-depthformat <format>] | -l [<device_id>]| -h | --help)]\n";
-  cout << argv[0] << " -h | --help : shows this help\n";
-  cout << argv[0] << " -l : list all available devices\n";
-  cout << argv[0] << " -buf X         : use a buffer size of X frames (default: " << buff_size << ")\n";
-  cout << argv[0] << " -visualize 0/1 : turn the visualization off/on (WARNING: when visualization is disabled, data writing is enabled by default!)\n";
-  cout << argv[0] << " -l <device-id> : list all available modes for specified device\n";
+  std::cout << "usage: " << argv[0] << " [(<device_id> [-visualize | -imagemode <mode>] | [-depthmode <mode>] | [-depthformat <format>] | -l [<device_id>]| -h | --help)]\n";
+  std::cout << argv[0] << " -h | --help : shows this help\n";
+  std::cout << argv[0] << " -l : list all available devices\n";
+  std::cout << argv[0] << " -buf X         : use a buffer size of X frames (default: " << buff_size << ")\n";
+  std::cout << argv[0] << " -visualize 0/1 : turn the visualization off/on (WARNING: when visualization is disabled, data writing is enabled by default!)\n";
+  std::cout << argv[0] << " -l <device-id> : list all available modes for specified device\n";
 
-  cout << "                 device_id may be #1, #2, ... for the first, second etc device in the list"
+  std::cout << "                 device_id may be #1, #2, ... for the first, second etc device in the list"
 #ifndef _WIN32
-       << " or" << endl
-       << "                 bus@address for the device connected to a specific usb-bus / address combination or" << endl
+       << " or" << std::endl
+       << "                 bus@address for the device connected to a specific usb-bus / address combination or" << std::endl
        << "                 <serial-number>"
 #endif
-       << endl;
-  cout << endl;
-  cout << "examples:" << endl;
-  cout << argv[0] << " \"#1\"" << endl;
-  cout << "    uses the first device." << endl;
-  cout << argv[0] << " -l" << endl;
-  cout << "    lists all available devices." << endl;
-  cout << argv[0] << " -l \"#2\"" << endl;
-  cout << "    lists all available modes for the second device" << endl;
+       << std::endl;
+  std::cout << std::endl;
+  std::cout << "examples:" << std::endl;
+  std::cout << argv[0] << " \"#1\"" << std::endl;
+  std::cout << "    uses the first device." << std::endl;
+  std::cout << argv[0] << " -l" << std::endl;
+  std::cout << "    lists all available devices." << std::endl;
+  std::cout << argv[0] << " -l \"#2\"" << std::endl;
+  std::cout << "    lists all available modes for the second device" << std::endl;
 #ifndef _WIN32
-  cout << argv[0] << " A00361800903049A" << endl;
-  cout << "    uses the device with the serial number \'A00361800903049A\'." << endl;
-  cout << argv[0] << " 1@16" << endl;
-  cout << "    uses the device on address 16 at USB bus 1." << endl;
+  std::cout << argv[0] << " A00361800903049A" << std::endl;
+  std::cout << "    uses the device with the serial number \'A00361800903049A\'." << std::endl;
+  std::cout << argv[0] << " 1@16" << std::endl;
+  std::cout << "    uses the device on address 16 at USB bus 1." << std::endl;
 #endif
 }
 
@@ -656,7 +661,7 @@ usage (char ** argv)
 void 
 ctrlC (int)
 {
-	boost::mutex::scoped_lock io_lock (io_mutex);
+	std::lock_guard<std::mutex> io_lock (io_mutex);
 	print_info ("\nCtrl-C detected, exit condition set to true.\n");
 	is_done = true;
 }
@@ -688,29 +693,29 @@ main (int argc, char ** argv)
       usage (argv);
       return (0);
     }
-    else if (device_id == "-l")
+    if (device_id == "-l")
     {
       if (argc >= 3)
       {
         OpenNIGrabber grabber (argv[2]);
-        boost::shared_ptr<openni_wrapper::OpenNIDevice> device = grabber.getDevice ();
-        vector<pair<int, XnMapOutputMode> > modes;
+        auto device = grabber.getDevice ();
+        std::vector<pair<int, XnMapOutputMode> > modes;
 
         if (device->hasImageStream ())
         {
-          cout << endl << "Supported image modes for device: " << device->getVendorName () << " , " << device->getProductName () << endl;
+          std::cout << std::endl << "Supported image modes for device: " << device->getVendorName () << " , " << device->getProductName () << std::endl;
           modes = grabber.getAvailableImageModes ();
           for (vector<pair<int, XnMapOutputMode> >::const_iterator it = modes.begin (); it != modes.end (); ++it)
           {
-            cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << endl;
+            std::cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << std::endl;
           }
         if (device->hasDepthStream ())
         {
-          cout << endl << "Supported depth modes for device: " << device->getVendorName () << " , " << device->getProductName () << endl;
+          std::cout << std::endl << "Supported depth modes for device: " << device->getVendorName () << " , " << device->getProductName () << std::endl;
           modes = grabber.getAvailableDepthModes ();
           for (vector<pair<int, XnMapOutputMode> >::const_iterator it = modes.begin (); it != modes.end (); ++it)
           {
-            cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << endl;
+            std::cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << std::endl;
           }
         }
         }
@@ -722,15 +727,15 @@ main (int argc, char ** argv)
         {
           for (unsigned deviceIdx = 0; deviceIdx < driver.getNumberDevices (); ++deviceIdx)
           {
-            cout << "Device: " << deviceIdx + 1 << ", vendor: " << driver.getVendorName (deviceIdx) << ", product: " << driver.getProductName (deviceIdx)
-              << ", connected: " << driver.getBus (deviceIdx) << " @ " << driver.getAddress (deviceIdx) << ", serial number: \'" << driver.getSerialNumber (deviceIdx) << "\'" << endl;
+            std::cout << "Device: " << deviceIdx + 1 << ", vendor: " << driver.getVendorName (deviceIdx) << ", product: " << driver.getProductName (deviceIdx)
+              << ", connected: " << driver.getBus (deviceIdx) << " @ " << driver.getAddress (deviceIdx) << ", serial number: \'" << driver.getSerialNumber (deviceIdx) << "\'" << std::endl;
           }
 
         }
         else
-          cout << "No devices connected." << endl;
+          std::cout << "No devices connected." << std::endl;
         
-        cout <<"Virtual Devices available: ONI player" << endl;
+        std::cout <<"Virtual Devices available: ONI player" << std::endl;
       }
       return (0);
     }
@@ -739,7 +744,7 @@ main (int argc, char ** argv)
   {
     openni_wrapper::OpenNIDriver& driver = openni_wrapper::OpenNIDriver::getInstance ();
     if (driver.getNumberDevices() > 0)
-      cout << "Device Id not set, using first device." << endl;
+      std::cout << "Device Id not set, using first device." << std::endl;
   }
   
   unsigned mode;
@@ -767,7 +772,7 @@ main (int argc, char ** argv)
 
   Driver driver (ni_grabber, buf_write, buf_vis);
   Writer writer (buf_write);
-  boost::shared_ptr<Viewer> viewer;
+  std::shared_ptr<Viewer> viewer;
   if (global_visualize)
     viewer.reset (new Viewer (buf_vis));
   else

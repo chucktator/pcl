@@ -52,23 +52,23 @@ namespace pcl
       public:
         
         /** \brief Constructor used for tool parameters */
-        PropertiesModel (QObject *parent = 0);
+        PropertiesModel (QObject *parent = nullptr);
         /** \brief Constructor used for item parameters */
-        PropertiesModel (CloudComposerItem* parent_item, QObject *parent = 0);
+        PropertiesModel (CloudComposerItem* parent_item, QObject *parent = nullptr);
         PropertiesModel (const PropertiesModel& to_copy);
         ~PropertiesModel ();
         
         /** \brief Helper function for adding a new property */
         void
-        addProperty (const QString prop_name, const QVariant value, const Qt::ItemFlags flags = Qt::ItemIsSelectable, const QString category = "");
+        addProperty (const QString& prop_name, const QVariant& value, const Qt::ItemFlags flags = Qt::ItemIsSelectable, const QString& category = "");
         
         /** \brief Helper function for adding a new property category */
         void
-        addCategory (const QString category_name);
+        addCategory (const QString& category_name);
         
         /** \brief Helper function to get a property */
         QVariant 
-        getProperty (const QString prop_name) const;
+        getProperty (const QString& prop_name) const;
         
         void 
         copyProperties (const PropertiesModel* to_copy);

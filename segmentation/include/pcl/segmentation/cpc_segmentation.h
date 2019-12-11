@@ -66,11 +66,11 @@ namespace pcl
   template <typename PointT>
   class CPCSegmentation : public LCCPSegmentation<PointT>
   {
-      typedef PointXYZINormal WeightSACPointType;
-      typedef LCCPSegmentation<PointT> LCCP;
+      using WeightSACPointType = PointXYZINormal;
+      using LCCP = LCCPSegmentation<PointT>;
       // LCCP typedefs
-      typedef typename LCCP::EdgeID EdgeID;
-      typedef typename LCCP::EdgeIterator EdgeIterator;
+      using EdgeID = typename LCCP::EdgeID;
+      using EdgeIterator = typename LCCP::EdgeIterator;
       // LCCP methods
       using LCCP::calculateConvexConnections;
       using LCCP::applyKconvexity;
@@ -105,8 +105,8 @@ namespace pcl
        *  \param[in] clean_cutting Decide if we cut only edges with supervoxels on opposite sides of the plane (clean) or all edges within the seed_resolution_ distance to the plane (not clean). The later was used in the paper.
        */
       inline void
-      setCutting (const uint32_t max_cuts = 20,
-                  const uint32_t cutting_min_segments = 0,
+      setCutting (const std::uint32_t max_cuts = 20,
+                  const std::uint32_t cutting_min_segments = 0,
                   const float cutting_min_score = 0.16,
                   const bool locally_constrained = true,
                   const bool directed_cutting = true,
@@ -123,7 +123,7 @@ namespace pcl
       /** \brief Set the number of iterations for the weighted RANSAC step (best cut estimations)
        *  \param[in] ransac_iterations The number of iterations */
       inline void 
-      setRANSACIterations (const uint32_t ransac_iterations)
+      setRANSACIterations (const std::uint32_t ransac_iterations)
       {
         ransac_itrs_ = ransac_iterations;
       }
@@ -134,15 +134,15 @@ namespace pcl
        *  \note Is used recursively
        *  \param[in] depth_levels_left When first calling the function set this parameter to the maximum levels you want to cut down */
       void
-      applyCuttingPlane (uint32_t depth_levels_left);
+      applyCuttingPlane (std::uint32_t depth_levels_left);
 
       ///  *** Parameters *** ///
 
       /** \brief Maximum number of cuts */
-      uint32_t max_cuts_;
+      std::uint32_t max_cuts_;
 
       /** \brief Minimum segment size for cutting */
-      uint32_t min_segment_size_for_cutting_;
+      std::uint32_t min_segment_size_for_cutting_;
 
       /** \brief Cut_score threshold */
       float min_cut_score_;
@@ -157,7 +157,7 @@ namespace pcl
       bool use_clean_cutting_;
       
       /** \brief Iterations for RANSAC */
-      uint32_t ransac_itrs_;
+      std::uint32_t ransac_itrs_;
      
       
 /******************************************* Directional weighted RANSAC declarations ******************************************************************/      
@@ -174,11 +174,11 @@ namespace pcl
       
       class WeightedRandomSampleConsensus : public SampleConsensus<WeightSACPointType>
       {
-          typedef SampleConsensusModel<WeightSACPointType>::Ptr SampleConsensusModelPtr;
+          using SampleConsensusModelPtr = SampleConsensusModel<WeightSACPointType>::Ptr;
 
         public:
-          typedef boost::shared_ptr<WeightedRandomSampleConsensus> Ptr;
-          typedef boost::shared_ptr<const WeightedRandomSampleConsensus> ConstPtr;
+          using Ptr = boost::shared_ptr<WeightedRandomSampleConsensus>;
+          using ConstPtr = boost::shared_ptr<const WeightedRandomSampleConsensus>;
 
           /** \brief WeightedRandomSampleConsensus (Weighted RAndom SAmple Consensus) main constructor
             * \param[in] model a Sample Consensus model
@@ -224,7 +224,7 @@ namespace pcl
             }
             weights_ = weights;
             model_pt_indices_->clear ();
-            for (size_t i = 0; i < weights.size (); ++i)
+            for (std::size_t i = 0; i < weights.size (); ++i)
             {
               if (weights[i] > std::numeric_limits<double>::epsilon ())
                 model_pt_indices_->push_back (i);
@@ -261,10 +261,10 @@ namespace pcl
           std::vector<double> weights_;
           
           /** \brief  The indices used for estimating the RANSAC model. Only those whose weight is > 0 */
-          boost::shared_ptr<std::vector<int> > model_pt_indices_;
+          pcl::IndicesPtr model_pt_indices_;
           
           /** \brief  The complete list of indices used for the model evaluation */
-          boost::shared_ptr<std::vector<int> > full_cloud_pt_indices_;
+          pcl::IndicesPtr full_cloud_pt_indices_;
           
           /** \brief  Pointer to the input PointCloud */
           pcl::PointCloud<WeightSACPointType>::ConstPtr point_cloud_ptr_;

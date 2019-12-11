@@ -51,9 +51,9 @@ namespace pcl
   namespace ihs
   {
     struct PointIHS;
-    typedef pcl::PointCloud <PointIHS> CloudIHS;
-    typedef CloudIHS::Ptr              CloudIHSPtr;
-    typedef CloudIHS::ConstPtr         CloudIHSConstPtr;
+    using CloudIHS = pcl::PointCloud<PointIHS>;
+    using CloudIHSPtr = CloudIHS::Ptr;
+    using CloudIHSConstPtr = CloudIHS::ConstPtr;
   } // End namespace ihs
 } // End namespace pcl
 
@@ -69,7 +69,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::ihs::_PointIHS,
                                    (float, rgb, rgb)
                                    (float, weight, weight)
                                    (unsigned int, age, age)
-                                   (uint32_t, directions, directions)
+                                   (std::uint32_t, directions, directions)
                                   )
 POINT_CLOUD_REGISTER_POINT_WRAPPER (pcl::ihs::PointIHS, pcl::ihs::_PointIHS)
 
@@ -79,16 +79,16 @@ namespace pcl
   {
     struct MeshTraits
     {
-      typedef PointIHS              VertexData;
-      typedef pcl::geometry::NoData HalfEdgeData;
-      typedef pcl::geometry::NoData EdgeData;
-      typedef pcl::geometry::NoData FaceData;
-      typedef boost::true_type      IsManifold;
+      using VertexData = PointIHS;
+      using HalfEdgeData = pcl::geometry::NoData;
+      using EdgeData = pcl::geometry::NoData;
+      using FaceData = pcl::geometry::NoData;
+      using IsManifold = std::true_type;
     };
 
     // NOTE: The drawMesh method in pcl::ihs::InHandScanner only supports triangles!
-    typedef pcl::geometry::TriangleMesh <MeshTraits> Mesh;
-    typedef Mesh::Ptr                                MeshPtr;
-    typedef Mesh::ConstPtr                           MeshConstPtr;
+    using Mesh = pcl::geometry::TriangleMesh<MeshTraits>;
+    using MeshPtr = Mesh::Ptr;
+    using MeshConstPtr = Mesh::ConstPtr;
   } // End namespace ihs
 } // End namespace pcl

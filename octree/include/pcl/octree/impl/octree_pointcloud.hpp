@@ -55,12 +55,6 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-template<typename PointT, typename LeafContainerT, typename BranchContainerT, typename OctreeT>
-pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>::~OctreePointCloud ()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////
 template<typename PointT, typename LeafContainerT, typename BranchContainerT, typename OctreeT> void
 pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>::addPointsFromInputCloud ()
 {
@@ -79,7 +73,7 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
   }
   else
   {
-    for (size_t i = 0; i < input_->points.size (); i++)
+    for (std::size_t i = 0; i < input_->points.size (); i++)
     {
       if (isFinite (input_->points[i]))
       {
@@ -221,7 +215,7 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
   float norm = direction.norm ();
   direction.normalize ();
 
-  const float step_size = static_cast<const float> (resolution_) * precision;
+  const float step_size = static_cast<float> (resolution_) * precision;
   // Ensure we get at least one step for the first voxel.
   const int nsteps = std::max (1, static_cast<int> (norm / step_size));
 
@@ -232,7 +226,7 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
   // Walk along the line segment with small steps.
   for (int i = 0; i < nsteps; ++i)
   {
-    Eigen::Vector3f p = origin + (direction * step_size * static_cast<const float> (i));
+    Eigen::Vector3f p = origin + (direction * step_size * static_cast<float> (i));
 
     PointT octree_p;
     octree_p.x = p.x ();
@@ -520,7 +514,7 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
   if (depth_mask)
   {
     // get amount of objects in leaf container
-    size_t leaf_obj_count = (*leaf_node)->getSize ();
+    std::size_t leaf_obj_count = (*leaf_node)->getSize ();
 
   // copy leaf data
     std::vector<int> leafIndices;
@@ -581,7 +575,7 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
   if (this->dynamic_depth_enabled_ && depth_mask)
   {
     // get amount of objects in leaf container
-    size_t leaf_obj_count = (*leaf_node)->getSize ();
+    std::size_t leaf_obj_count = (*leaf_node)->getSize ();
 
     while  (leaf_obj_count>=max_objs_per_leaf_ && depth_mask)
     {
@@ -626,9 +620,9 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
   const float minValue = std::numeric_limits<float>::epsilon();
 
   // find maximum key values for x, y, z
-  max_key_x = static_cast<unsigned int> (ceil ((max_x_ - min_x_ - minValue) / resolution_));
-  max_key_y = static_cast<unsigned int> (ceil ((max_y_ - min_y_ - minValue) / resolution_));
-  max_key_z = static_cast<unsigned int> (ceil ((max_z_ - min_z_ - minValue) / resolution_));
+  max_key_x = static_cast<unsigned int> (std::ceil ((max_x_ - min_x_ - minValue) / resolution_));
+  max_key_y = static_cast<unsigned int> (std::ceil ((max_y_ - min_y_ - minValue) / resolution_));
+  max_key_z = static_cast<unsigned int> (std::ceil ((max_z_ - min_z_ - minValue) / resolution_));
 
   // find maximum amount of keys
   max_voxels = std::max (std::max (std::max (max_key_x, max_key_y), max_key_z), static_cast<unsigned int> (2));

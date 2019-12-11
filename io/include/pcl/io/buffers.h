@@ -37,12 +37,12 @@
 
 #pragma once
 
-#include <vector>
-#include <limits>
 #include <cassert>
+#include <limits>
+#include <mutex>
+#include <vector>
 
-#include <boost/cstdint.hpp>
-#include <boost/thread/mutex.hpp>
+#include <cstdint>
 
 namespace pcl
 {
@@ -68,14 +68,14 @@ namespace pcl
 
       public:
 
-        typedef T value_type;
+        using value_type = T;
 
         virtual
         ~Buffer ();
 
         /** Access an element at a given index. */
         virtual T
-        operator[] (size_t idx) const = 0;
+        operator[] (std::size_t idx) const = 0;
 
         /** Insert a new chunk of data into the buffer.
           *
@@ -86,7 +86,7 @@ namespace pcl
         push (std::vector<T>& data) = 0;
 
         /** Get the size of the buffer. */
-        inline size_t
+        inline std::size_t
         size () const
         {
           return (size_);
@@ -94,9 +94,9 @@ namespace pcl
 
       protected:
 
-        Buffer (size_t size);
+        Buffer (std::size_t size);
 
-        const size_t size_;
+        const std::size_t size_;
 
     };
 
@@ -110,13 +110,13 @@ namespace pcl
       public:
 
         /** Construct a buffer of given size. */
-        SingleBuffer (size_t size);
+        SingleBuffer (std::size_t size);
 
         
         ~SingleBuffer ();
 
         T
-        operator[] (size_t idx) const override;
+        operator[] (std::size_t idx) const override;
 
         void
         push (std::vector<T>& data) override;
@@ -124,7 +124,7 @@ namespace pcl
       private:
 
         std::vector<T> data_;
-        mutable boost::mutex data_mutex_;
+        mutable std::mutex data_mutex_;
 
         using Buffer<T>::size_;
 
@@ -154,7 +154,7 @@ namespace pcl
           * \param[in] size buffer size
           * \param[in] window_size running window size over which the median
           * value should be computed (0..255) */
-        MedianBuffer (size_t size, unsigned char window_size);
+        MedianBuffer (std::size_t size, unsigned char window_size);
 
         
         ~MedianBuffer ();
@@ -163,7 +163,7 @@ namespace pcl
           *
           * This operation is constant time. */
         T
-        operator[] (size_t idx) const override;
+        operator[] (std::size_t idx) const override;
 
         /** Insert a new chunk of data into the buffer.
           *
@@ -200,7 +200,7 @@ namespace pcl
         /// Number of invalid values in the buffer
         std::vector<unsigned char> data_invalid_count_;
 
-        mutable boost::mutex data_mutex_;
+        mutable std::mutex data_mutex_;
 
         using Buffer<T>::size_;
 
@@ -230,7 +230,7 @@ namespace pcl
           * \param[in] size buffer size
           * \param[in] window_size running window size over which the median
           * value should be computed (0..255) */
-        AverageBuffer (size_t size, unsigned char window_size);
+        AverageBuffer (std::size_t size, unsigned char window_size);
 
         
         ~AverageBuffer ();
@@ -239,7 +239,7 @@ namespace pcl
           *
           * This operation is constant time. */
         T
-        operator[] (size_t idx) const override;
+        operator[] (std::size_t idx) const override;
 
         /** Insert a new chunk of data into the buffer.
           *
@@ -266,7 +266,7 @@ namespace pcl
         /// Number of invalid values in the buffer
         std::vector<unsigned char> data_invalid_count_;
 
-        mutable boost::mutex data_mutex_;
+        mutable std::mutex data_mutex_;
 
         using Buffer<T>::size_;
 

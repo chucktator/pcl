@@ -40,6 +40,7 @@
 
 #pragma once
 
+#include <pcl/pcl_macros.h>
 #include <pcl/sample_consensus/sac_model.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/sample_consensus/sac_model_perpendicular_plane.h>
@@ -83,14 +84,15 @@ namespace pcl
       using SampleConsensusModel<PointT>::error_sqr_dists_;
       using SampleConsensusModel<PointT>::isModelValid;
 
-      typedef typename SampleConsensusModel<PointT>::PointCloud PointCloud;
-      typedef typename SampleConsensusModel<PointT>::PointCloudPtr PointCloudPtr;
-      typedef typename SampleConsensusModel<PointT>::PointCloudConstPtr PointCloudConstPtr;
+      using PointCloud = typename SampleConsensusModel<PointT>::PointCloud;
+      using PointCloudPtr = typename SampleConsensusModel<PointT>::PointCloudPtr;
+      using PointCloudConstPtr = typename SampleConsensusModel<PointT>::PointCloudConstPtr;
 
-      typedef typename SampleConsensusModelFromNormals<PointT, PointNT>::PointCloudNPtr PointCloudNPtr;
-      typedef typename SampleConsensusModelFromNormals<PointT, PointNT>::PointCloudNConstPtr PointCloudNConstPtr;
+      using PointCloudNPtr = typename SampleConsensusModelFromNormals<PointT, PointNT>::PointCloudNPtr;
+      using PointCloudNConstPtr = typename SampleConsensusModelFromNormals<PointT, PointNT>::PointCloudNConstPtr;
 
-      typedef boost::shared_ptr<SampleConsensusModelNormalPlane> Ptr;
+      using Ptr = boost::shared_ptr<SampleConsensusModelNormalPlane<PointT, PointNT> >;
+      using ConstPtr = boost::shared_ptr<const SampleConsensusModelNormalPlane<PointT, PointNT>>;
 
       /** \brief Constructor for base SampleConsensusModelNormalPlane.
         * \param[in] cloud the input point cloud dataset
@@ -153,11 +155,11 @@ namespace pcl
       getDistancesToModel (const Eigen::VectorXf &model_coefficients,
                            std::vector<double> &distances) const override;
 
-      /** \brief Return an unique id for this model (SACMODEL_NORMAL_PLANE). */
+      /** \brief Return a unique id for this model (SACMODEL_NORMAL_PLANE). */
       inline pcl::SacModel 
       getModelType () const override { return (SACMODEL_NORMAL_PLANE); }
 
-    	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    	PCL_MAKE_ALIGNED_OPERATOR_NEW
 
     protected:
       using SampleConsensusModel<PointT>::sample_size_;

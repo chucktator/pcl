@@ -67,7 +67,7 @@ const float zeroFloatEps8 = 1E-8f;
 inline bool
 areEquals (double val1, double val2, double zeroDoubleEps = zeroDoubleEps15)
 {
-  return (fabs (val1 - val2)<zeroDoubleEps);
+  return (std::abs (val1 - val2)<zeroDoubleEps);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,7 +81,7 @@ areEquals (double val1, double val2, double zeroDoubleEps = zeroDoubleEps15)
 inline bool
 areEquals (float val1, float val2, float zeroFloatEps = zeroFloatEps8)
 {
-  return (fabs (val1 - val2)<zeroFloatEps);
+  return (std::fabs (val1 - val2)<zeroFloatEps);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -205,7 +205,7 @@ pcl::SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::createBinDistan
   Eigen::Vector4f current_frame_z (current_frame.z_axis[0], current_frame.z_axis[1], current_frame.z_axis[2], 0);
 
   unsigned nan_counter = 0;
-  for (size_t i_idx = 0; i_idx < indices.size (); ++i_idx)
+  for (std::size_t i_idx = 0; i_idx < indices.size (); ++i_idx)
   {
     // check NaN normal
     const Eigen::Vector4f& normal_vec = normals_->points[indices[i_idx]].getNormalVector4fMap ();
@@ -267,7 +267,7 @@ pcl::SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::interpolateSing
   Eigen::Vector4f current_frame_y (current_frame.y_axis[0], current_frame.y_axis[1], current_frame.y_axis[2], 0);
   Eigen::Vector4f current_frame_z (current_frame.z_axis[0], current_frame.z_axis[1], current_frame.z_axis[2], 0);
 
-  for (size_t i_idx = 0; i_idx < indices.size (); ++i_idx)
+  for (std::size_t i_idx = 0; i_idx < indices.size (); ++i_idx)
   {
     if (!std::isfinite(binDistance[i_idx]))
       continue;
@@ -286,11 +286,11 @@ pcl::SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::interpolateSing
     double zInFeatRef = delta.dot (current_frame_z);
 
     // To avoid numerical problems afterwards
-    if (fabs (yInFeatRef) < 1E-30)
+    if (std::abs (yInFeatRef) < 1E-30)
       yInFeatRef  = 0;
-    if (fabs (xInFeatRef) < 1E-30)
+    if (std::abs (xInFeatRef) < 1E-30)
       xInFeatRef  = 0;
-    if (fabs (zInFeatRef) < 1E-30)
+    if (std::abs (zInFeatRef) < 1E-30)
       zInFeatRef  = 0;
 
 
@@ -304,21 +304,21 @@ pcl::SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::interpolateSing
     desc_index = desc_index << 1;
 
     if ((xInFeatRef * yInFeatRef > 0) || (xInFeatRef == 0.0))
-      desc_index += (fabs (xInFeatRef) >= fabs (yInFeatRef)) ? 0 : 4;
+      desc_index += (std::abs (xInFeatRef) >= std::abs (yInFeatRef)) ? 0 : 4;
     else
-      desc_index += (fabs (xInFeatRef) > fabs (yInFeatRef)) ? 4 : 0;
+      desc_index += (std::abs (xInFeatRef) > std::abs (yInFeatRef)) ? 4 : 0;
 
     desc_index += zInFeatRef > 0 ? 1 : 0;
 
     // 2 RADII
     desc_index += (distance > radius1_2_) ? 2 : 0;
 
-    int step_index = static_cast<int>(floor (binDistance[i_idx] +0.5));
+    int step_index = static_cast<int>(std::floor (binDistance[i_idx] +0.5));
     int volume_index = desc_index * (nr_bins+1);
 
     //Interpolation on the cosine (adjacent bins in the histogram)
     binDistance[i_idx] -= step_index;
-    double intWeight = (1- fabs (binDistance[i_idx]));
+    double intWeight = (1- std::abs (binDistance[i_idx]));
 
     if (binDistance[i_idx] > 0)
       shot[volume_index + ((step_index+1) % nr_bins)] += static_cast<float> (binDistance[i_idx]);
@@ -359,11 +359,11 @@ pcl::SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::interpolateSing
     if (inclinationCos > 1.0)
       inclinationCos = 1.0;
 
-    double inclination = acos (inclinationCos);
+    double inclination = std::acos (inclinationCos);
 
     assert (inclination >= 0.0 && inclination <= PST_RAD_180);
 
-    if (inclination > PST_RAD_90 || (fabs (inclination - PST_RAD_90) < 1e-30 && zInFeatRef <= 0))
+    if (inclination > PST_RAD_90 || (std::abs (inclination - PST_RAD_90) < 1e-30 && zInFeatRef <= 0))
     {
       double inclinationDistance = (inclination - PST_RAD_135) / PST_RAD_90;
       if (inclination > PST_RAD_135)
@@ -391,7 +391,7 @@ pcl::SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::interpolateSing
     if (yInFeatRef != 0.0 || xInFeatRef != 0.0)
     {
       //Interpolation on the azimuth (adjacent horizontal volumes)
-      double azimuth = atan2 (yInFeatRef, xInFeatRef);
+      double azimuth = std::atan2 (yInFeatRef, xInFeatRef);
 
       int sel = desc_index >> 2;
       double angularSectorSpan = PST_RAD_45;
@@ -446,7 +446,7 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::interpolateDou
   Eigen::Vector4f current_frame_y (current_frame.y_axis[0], current_frame.y_axis[1], current_frame.y_axis[2], 0);
   Eigen::Vector4f current_frame_z (current_frame.z_axis[0], current_frame.z_axis[1], current_frame.z_axis[2], 0);
 
-  for (size_t i_idx = 0; i_idx < indices.size (); ++i_idx)
+  for (std::size_t i_idx = 0; i_idx < indices.size (); ++i_idx)
   {
     if (!std::isfinite(binDistanceShape[i_idx]))
       continue;
@@ -465,11 +465,11 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::interpolateDou
     double zInFeatRef = delta.dot (current_frame_z);
 
     // To avoid numerical problems afterwards
-    if (fabs (yInFeatRef) < 1E-30)
+    if (std::abs (yInFeatRef) < 1E-30)
       yInFeatRef  = 0;
-    if (fabs (xInFeatRef) < 1E-30)
+    if (std::abs (xInFeatRef) < 1E-30)
       xInFeatRef  = 0;
-    if (fabs (zInFeatRef) < 1E-30)
+    if (std::abs (zInFeatRef) < 1E-30)
       zInFeatRef  = 0;
 
     unsigned char bit4 = ((yInFeatRef > 0) || ((yInFeatRef == 0.0) && (xInFeatRef < 0))) ? 1 : 0;
@@ -482,17 +482,17 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::interpolateDou
     desc_index = desc_index << 1;
 
     if ((xInFeatRef * yInFeatRef > 0) || (xInFeatRef == 0.0))
-      desc_index += (fabs (xInFeatRef) >= fabs (yInFeatRef)) ? 0 : 4;
+      desc_index += (std::abs (xInFeatRef) >= std::abs (yInFeatRef)) ? 0 : 4;
     else
-      desc_index += (fabs (xInFeatRef) > fabs (yInFeatRef)) ? 4 : 0;
+      desc_index += (std::abs (xInFeatRef) > std::abs (yInFeatRef)) ? 4 : 0;
 
     desc_index += zInFeatRef > 0 ? 1 : 0;
 
     // 2 RADII
     desc_index += (distance > radius1_2_) ? 2 : 0;
 
-    int step_index_shape = static_cast<int>(floor (binDistanceShape[i_idx] +0.5));
-    int step_index_color = static_cast<int>(floor (binDistanceColor[i_idx] +0.5));
+    int step_index_shape = static_cast<int>(std::floor (binDistanceShape[i_idx] +0.5));
+    int step_index_color = static_cast<int>(std::floor (binDistanceColor[i_idx] +0.5));
 
     int volume_index_shape = desc_index * (nr_bins_shape+1);
     int volume_index_color = shapeToColorStride + desc_index * (nr_bins_color+1);
@@ -501,8 +501,8 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::interpolateDou
     binDistanceShape[i_idx] -= step_index_shape;
     binDistanceColor[i_idx] -= step_index_color;
 
-    double intWeightShape = (1- fabs (binDistanceShape[i_idx]));
-    double intWeightColor = (1- fabs (binDistanceColor[i_idx]));
+    double intWeightShape = (1- std::abs (binDistanceShape[i_idx]));
+    double intWeightColor = (1- std::abs (binDistanceColor[i_idx]));
 
     if (binDistanceShape[i_idx] > 0)
       shot[volume_index_shape + ((step_index_shape + 1) % nr_bins_shape)] += static_cast<float> (binDistanceShape[i_idx]);
@@ -558,11 +558,11 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::interpolateDou
     if (inclinationCos > 1.0)
       inclinationCos = 1.0;
 
-    double inclination = acos (inclinationCos);
+    double inclination = std::acos (inclinationCos);
 
     assert (inclination >= 0.0 && inclination <= PST_RAD_180);
 
-    if (inclination > PST_RAD_90 || (fabs (inclination - PST_RAD_90) < 1e-30 && zInFeatRef <= 0))
+    if (inclination > PST_RAD_90 || (std::abs (inclination - PST_RAD_90) < 1e-30 && zInFeatRef <= 0))
     {
       double inclinationDistance = (inclination - PST_RAD_135) / PST_RAD_90;
       if (inclination > PST_RAD_135)
@@ -602,7 +602,7 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::interpolateDou
     if (yInFeatRef != 0.0 || xInFeatRef != 0.0)
     {
       //Interpolation on the azimuth (adjacent horizontal volumes)
-      double azimuth = atan2 (yInFeatRef, xInFeatRef);
+      double azimuth = std::atan2 (yInFeatRef, xInFeatRef);
 
       int sel = desc_index >> 2;
       double angularSectorSpan = PST_RAD_45;
@@ -650,7 +650,7 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::computePointSH
   shot.setZero ();
   std::vector<double> binDistanceShape;
   std::vector<double> binDistanceColor;
-  size_t nNeighbors = indices.size ();
+  std::size_t nNeighbors = indices.size ();
   //Skip the current feature if the number of its neighbors is not sufficient for its description
   if (nNeighbors < 5)
   {
@@ -687,7 +687,7 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::computePointSH
     aRef /= 120.0f;
     bRef /= 120.0f;    //normalized LAB components (0<L<1, -1<a<1, -1<b<1)
 
-    for (size_t i_idx = 0; i_idx < indices.size (); ++i_idx)
+    for (std::size_t i_idx = 0; i_idx < indices.size (); ++i_idx)
     {
       //unsigned char red = surface_->points[indices[i_idx]].rgba >> 16 & 0xFF;
       //unsigned char green = surface_->points[indices[i_idx]].rgba >> 8 & 0xFF;
@@ -703,7 +703,7 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::computePointSH
       a /= 120.0f;
       b /= 120.0f;   //normalized LAB components (0<L<1, -1<a<1, -1<b<1)
 
-      double colorDistance = (fabs (LRef - L) + ((fabs (aRef - a) + fabs (bRef - b)) / 2)) /3;
+      double colorDistance = (std::fabs (LRef - L) + ((std::fabs (aRef - a) + std::fabs (bRef - b)) / 2)) /3;
 
       if (colorDistance > 1.0)
         colorDistance = 1.0;
@@ -781,7 +781,7 @@ pcl::SHOTEstimation<PointInT, PointNT, PointOutT, PointRFT>::computeFeature (pcl
 
   output.is_dense = true;
   // Iterating over the entire index vector
-  for (size_t idx = 0; idx < indices_->size (); ++idx)
+  for (std::size_t idx = 0; idx < indices_->size (); ++idx)
   {
     bool lrf_is_nan = false;
     const PointRFT& current_frame = (*frames_)[idx];
@@ -853,7 +853,7 @@ pcl::SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT>::computeFeature
 
   output.is_dense = true;
   // Iterating over the entire index vector
-  for (size_t idx = 0; idx < indices_->size (); ++idx)
+  for (std::size_t idx = 0; idx < indices_->size (); ++idx)
   {
     bool lrf_is_nan = false;
     const PointRFT& current_frame = (*frames_)[idx];

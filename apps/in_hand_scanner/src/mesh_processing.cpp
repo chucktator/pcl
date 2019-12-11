@@ -55,8 +55,6 @@ pcl::ihs::MeshProcessing::MeshProcessing ()
 void
 pcl::ihs::MeshProcessing::processBoundary (Mesh& mesh, const std::vector <HalfEdgeIndices>& boundary_collection, const bool cleanup) const
 {
-  typedef std::vector <Mesh::HalfEdgeIndices> BoundaryCollection;
-
   Mesh::VertexIndex vi_a, vi_b, vi_c, vi_d;
   Eigen::Vector3f ab, bc, ac, n_adb, n_plane; // Edges and normals
   Mesh::FaceIndex opposite_face;
@@ -92,7 +90,7 @@ pcl::ihs::MeshProcessing::processBoundary (Mesh& mesh, const std::vector <HalfEd
       //                  \ /          //
       //                   5           //
 
-      for (size_t i=0; i<boundary.size (); ++i)
+      for (std::size_t i=0; i<boundary.size (); ++i)
       {
         // The vertices on the boundary
         vi_a = mesh.getOriginatingVertexIndex (boundary [i]);

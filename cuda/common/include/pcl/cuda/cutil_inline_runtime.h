@@ -75,10 +75,10 @@ inline void __cutilExit(int argc, char **argv)
 inline int _ConvertSMVer2Cores(int major, int minor)
 {
 	// Defines for GPU Architecture types (using the SM version to determine the # of cores per SM
-	typedef struct {
+	struct sSMtoCores {
 		int SM; // 0xMm (hexadecimal notation), M = SM Major version, and m = SM minor version
 		int Cores;
-	} sSMtoCores;
+	};
 
 	sSMtoCores nGpuArchCoresPerSM[] = 
 	{ { 0x10,  8 },
@@ -163,12 +163,7 @@ inline int cutGetMaxGflopsGraphicsDeviceId()
 	while ( current_device < device_count ) {
 		cudaGetDeviceProperties( &deviceProp, current_device );
 
-#if CUDA_VERSION >= 3020
 		if (deviceProp.tccDriver) bTCC = 1;
-#else
-		// Assume a Tesla GPU is running in TCC if we are running CUDA 3.1
-		if (deviceProp.name[0] == 'T') bTCC = 1;
-#endif
 
 		if (!bTCC) {
 			if (deviceProp.major > 0 && deviceProp.major < 9999) {
@@ -188,12 +183,7 @@ inline int cutGetMaxGflopsGraphicsDeviceId()
 			sm_per_multiproc = _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor);
 		}
 
-#if CUDA_VERSION >= 3020
 		if (deviceProp.tccDriver) bTCC = 1;
-#else
-		// Assume a Tesla GPU is running in TCC if we are running CUDA 3.1
-		if (deviceProp.name[0] == 'T') bTCC = 1;
-#endif
 
 		if (!bTCC) // Is this GPU running the TCC driver?  If so we pass on this
 		{
@@ -223,7 +213,7 @@ inline int cutGetMaxGflopsGraphicsDeviceId()
 #  ifdef _DEBUG // Do this only in debug mode...
 	inline void VSPrintf(FILE *file, LPCSTR fmt, ...)
 	{
-		size_t fmt2_sz	= 2048;
+		std::size_t fmt2_sz	= 2048;
 		char *fmt2		= (char*)malloc(fmt2_sz);
 		va_list  vlist;
 		va_start(vlist, fmt);

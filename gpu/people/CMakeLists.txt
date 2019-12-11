@@ -20,16 +20,12 @@ REMOVE_VTK_DEFINITIONS()
 unset(CUDA_npp_LIBRARY CACHE)
 find_cuda_helper_libs(nppc)
 find_cuda_helper_libs(npps)
-if(${CUDA_VERSION} VERSION_GREATER_EQUAL "9.0")
+if(CUDA_VERSION VERSION_GREATER "9.0" OR CUDA_VERSION VERSION_EQUAL "9.0")
   find_cuda_helper_libs(nppim)
   find_cuda_helper_libs(nppidei)
-else()
-  find_cuda_helper_libs(nppi)
-endif()
-
-if(${CUDA_VERSION} VERSION_GREATER_EQUAL "9.0")
   set(CUDA_npp_LIBRARY ${CUDA_nppc_LIBRARY} ${CUDA_nppim_LIBRARY} ${CUDA_nppidei_LIBRARY} ${CUDA_npps_LIBRARY} CACHE STRING "npp library")
 else()
+  find_cuda_helper_libs(nppi)
   set(CUDA_npp_LIBRARY ${CUDA_nppc_LIBRARY} ${CUDA_nppi_LIBRARY} ${CUDA_npps_LIBRARY} CACHE STRING "npp library")
 endif()
 
@@ -67,7 +63,7 @@ CUDA_COMPILE(objs_cuda ${srcs_cuda} ${hdrs})
 
 set(LIB_NAME "pcl_${SUBSYS_NAME}")
 
-PCL_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${hdrs} ${srcs_cuda} ${objs_cuda})
+PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${hdrs} ${srcs_cuda} ${objs_cuda})
 target_link_libraries("${LIB_NAME}" pcl_common pcl_io pcl_search pcl_surface pcl_segmentation pcl_features pcl_sample_consensus pcl_gpu_utils pcl_gpu_containers "${CUDA_CUDART_LIBRARY}" ${CUDA_npp_LIBRARY})
 PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_DEPS ${SUBSYS_DEPS})
 

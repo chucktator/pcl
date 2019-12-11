@@ -59,21 +59,16 @@ namespace pcl
   {
     namespace people
     {
-      /*
-      struct OtherDetector
-      {
-          typedef boost::shared_ptr<OtherDetector> Ptr;
-      };
-      */
       class PCL_EXPORTS PeopleDetector
       {
         public:
-          typedef boost::shared_ptr<PeopleDetector> Ptr;                              
+          using Ptr = boost::shared_ptr<PeopleDetector>;                              
+          using ConstPtr = boost::shared_ptr<const PeopleDetector>;
 
-          typedef pcl::PointXYZRGBA               PointTC;
-          typedef pcl::PointXYZ                   PointT;
-          typedef DeviceArray2D<unsigned short>   Depth;
-          typedef DeviceArray2D<pcl::RGB>         Image;
+          using PointTC = pcl::PointXYZRGBA;
+          using PointT = pcl::PointXYZ;
+          using Depth = DeviceArray2D<unsigned short>;
+          using Image = DeviceArray2D<pcl::RGB>;
 
           // ALL THE DETECTOR OBJECTS
           RDFBodyPartsDetector::Ptr     rdf_detector_;
@@ -122,9 +117,9 @@ namespace pcl
           /** \brief Class getName method. */
           inline const std::string getClassName () const { return "PeopleDetector"; }
 
-          typedef DeviceArray2D<unsigned char> Labels;
-          typedef DeviceArray2D<unsigned char> Mask;
-          typedef DeviceArray2D<float> Hue;
+          using Labels = DeviceArray2D<unsigned char>;
+          using Mask = DeviceArray2D<unsigned char>;
+          using Hue = DeviceArray2D<float>;
 
           /** \brief indicates first time callback (allows for tracking features to start from second frame) **/
           bool first_iteration_;

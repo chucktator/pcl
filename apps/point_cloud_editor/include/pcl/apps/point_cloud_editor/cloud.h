@@ -90,9 +90,6 @@ class Cloud : public Statistics
     /// variables of this object are initialized but not set.
     Cloud (const Cloud3D& cloud, bool register_stats=false);
 
-    /// @brief Destructor
-    ~Cloud ();
-
     /// @brief Equal Operator
     /// @details Deep copies all the state of the passed cloud to this cloud.
     /// @param cloud The cloud object whose status to be copied to this object
@@ -204,7 +201,7 @@ class Cloud : public Statistics
     /// a faster rendering mode; this also occurs if the selection object is
     /// empty.
     void
-    setSelection (SelectionPtr selection_ptr);
+    setSelection (const SelectionPtr& selection_ptr);
 
     /// @brief Sets the RGB values for coloring points in COLOR_BY_PURE mode.
     /// @param r the value for red color
@@ -415,7 +412,7 @@ class Cloud : public Statistics
     /// @brief A weak pointer pointing to the selection object.
     /// @details This implementation uses the weak pointer to allow for a lazy
     /// update of the cloud if the selection object is destroyed.
-    boost::weak_ptr<Selection> selection_wk_ptr_;
+    std::weak_ptr<Selection> selection_wk_ptr_;
 
     /// Flag that indicates whether a color ramp should be used (true) or not
     /// (false) when displaying the cloud

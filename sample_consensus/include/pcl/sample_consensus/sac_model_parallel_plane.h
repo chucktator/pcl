@@ -47,7 +47,8 @@ namespace pcl
 {
   /** \brief @b SampleConsensusModelParallelPlane defines a model for 3D plane segmentation using additional
     * angular constraints. The plane must be parallel to a user-specified axis
-    * (\ref setAxis) within an user-specified angle threshold (\ref setEpsAngle).
+    * (\ref setAxis) within a user-specified angle threshold (\ref setEpsAngle).
+    * In other words, the plane <b>normal</b> must be (nearly) <b>perpendicular</b> to the specified axis.
     *
     * Code example for a plane model, parallel (within a 15 degrees tolerance) with the Z axis:
     * \code
@@ -67,11 +68,12 @@ namespace pcl
     public:
       using SampleConsensusModel<PointT>::model_name_;
 
-      typedef typename SampleConsensusModelPlane<PointT>::PointCloud PointCloud;
-      typedef typename SampleConsensusModelPlane<PointT>::PointCloudPtr PointCloudPtr;
-      typedef typename SampleConsensusModelPlane<PointT>::PointCloudConstPtr PointCloudConstPtr;
+      using PointCloud = typename SampleConsensusModelPlane<PointT>::PointCloud;
+      using PointCloudPtr = typename SampleConsensusModelPlane<PointT>::PointCloudPtr;
+      using PointCloudConstPtr = typename SampleConsensusModelPlane<PointT>::PointCloudConstPtr;
 
-      typedef boost::shared_ptr<SampleConsensusModelParallelPlane> Ptr;
+      using Ptr = boost::shared_ptr<SampleConsensusModelParallelPlane<PointT> >;
+      using ConstPtr = boost::shared_ptr<const SampleConsensusModelParallelPlane<PointT>>;
 
       /** \brief Constructor for base SampleConsensusModelParallelPlane.
         * \param[in] cloud the input point cloud dataset
@@ -125,7 +127,7 @@ namespace pcl
         * \note You need to specify an angle > 0 in order to activate the axis-angle constraint!
         */
       inline void
-      setEpsAngle (const double ea) { eps_angle_ = ea; sin_angle_ = fabs (sin (ea));}
+      setEpsAngle (const double ea) { eps_angle_ = ea; sin_angle_ = std::abs (sin (ea));}
 
       /** \brief Get the angle epsilon (delta) threshold. */
       inline double
@@ -159,7 +161,7 @@ namespace pcl
       getDistancesToModel (const Eigen::VectorXf &model_coefficients,
                            std::vector<double> &distances) const override;
 
-      /** \brief Return an unique id for this model (SACMODEL_PARALLEL_PLANE). */
+      /** \brief Return a unique id for this model (SACMODEL_PARALLEL_PLANE). */
       inline pcl::SacModel
       getModelType () const override { return (SACMODEL_PARALLEL_PLANE); }
 

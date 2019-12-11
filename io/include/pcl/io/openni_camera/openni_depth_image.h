@@ -56,8 +56,8 @@ namespace openni_wrapper
   class PCL_EXPORTS DepthImage
   {
     public:
-      typedef boost::shared_ptr<DepthImage> Ptr;
-      typedef boost::shared_ptr<const DepthImage> ConstPtr;
+      using Ptr = boost::shared_ptr<DepthImage>;
+      using ConstPtr = boost::shared_ptr<const DepthImage>;
 
       /** \brief Constructor
         * \param[in] depth_meta_data the actual data from the OpenNI library
@@ -163,7 +163,7 @@ namespace openni_wrapper
   } ;
 
   DepthImage::DepthImage (boost::shared_ptr<xn::DepthMetaData> depth_meta_data, float baseline, float focal_length, XnUInt64 shadow_value, XnUInt64 no_sample_value) throw ()
-  : depth_md_ (depth_meta_data)
+  : depth_md_ (std::move(depth_meta_data))
   , baseline_ (baseline)
   , focal_length_ (focal_length)
   , shadow_value_ (shadow_value)

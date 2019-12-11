@@ -107,23 +107,23 @@ namespace NcvCTprep
 //
 //==============================================================================
 
-typedef               bool NcvBool;
-typedef          long long Ncv64s;
+using NcvBool = bool;
+using Ncv64s = long long;
 
 #if defined(__APPLE__) && !defined(__CUDACC__)
-    typedef uint64_t Ncv64u;
+    using Ncv64u = std::uint64_t;
 #else
-    typedef unsigned long long Ncv64u;
+    using Ncv64u = unsigned long long;
 #endif
 
-typedef                int Ncv32s;
-typedef       unsigned int Ncv32u;
-typedef              short Ncv16s;
-typedef     unsigned short Ncv16u;
-typedef               char Ncv8s;
-typedef      unsigned char Ncv8u;
-typedef              float Ncv32f;
-typedef             double Ncv64f;
+using Ncv32s = int;
+using Ncv32u = unsigned int;
+using Ncv16s = short;
+using Ncv16u = unsigned short;
+using Ncv8s = char;
+using Ncv8u = unsigned char;
+using Ncv32f = float;
+using Ncv64f = double;
 
 struct NcvRect8u
 {
@@ -223,7 +223,7 @@ const Ncv32u K_LOG2_WARP_SIZE = 5;
 
 NCV_EXPORTS void ncvDebugOutput(const std::string &msg);
 
-typedef void NCVDebugOutputHandler(const std::string &msg);
+using NCVDebugOutputHandler = void (const std::string &);
 
 NCV_EXPORTS void ncvSetDebugOutputHandler(NCVDebugOutputHandler* func);
 
@@ -334,7 +334,7 @@ enum
     NCV_LAST_STATUS                           ///< Marker to continue error numeration in other files
 };
 
-typedef Ncv32u NCVStatus;
+using NCVStatus = Ncv32u;
 
 #define NCV_SET_SKIP_COND(x) \
     bool __ncv_skip_cond = x
@@ -347,22 +347,6 @@ typedef Ncv32u NCVStatus;
 
 #define NCV_SKIP_COND_END \
     }
-
-
-//==============================================================================
-//
-// Timer
-//
-//==============================================================================
-
-
-typedef struct _NcvTimer *NcvTimer;
-
-NCV_EXPORTS NcvTimer ncvStartTimer();
-
-NCV_EXPORTS double ncvEndQueryTimerUs(NcvTimer t);
-
-NCV_EXPORTS double ncvEndQueryTimerMs(NcvTimer t);
 
 
 //==============================================================================
@@ -407,7 +391,7 @@ struct NCV_EXPORTS NCVMemPtr
 struct NCV_EXPORTS NCVMemSegment
 {
     NCVMemPtr begin;
-    size_t size;
+    std::size_t size;
     void clear();
 };
 
@@ -420,7 +404,7 @@ class NCV_EXPORTS INCVMemAllocator
 public:
     virtual ~INCVMemAllocator() = 0;
 
-    virtual NCVStatus alloc(NCVMemSegment &seg, size_t size) = 0;
+    virtual NCVStatus alloc(NCVMemSegment &seg, std::size_t size) = 0;
     virtual NCVStatus dealloc(NCVMemSegment &seg) = 0;
 
     virtual NcvBool isInitialized() const = 0;
@@ -428,7 +412,7 @@ public:
     
     virtual NCVMemoryType memType() const = 0;
     virtual Ncv32u alignment() const = 0;
-    virtual size_t maxSize() const = 0;
+    virtual std::size_t maxSize() const = 0;
 };
 
 inline INCVMemAllocator::~INCVMemAllocator() {}
@@ -445,10 +429,10 @@ class NCV_EXPORTS NCVMemStackAllocator : public INCVMemAllocator
 public:
 
     explicit NCVMemStackAllocator(Ncv32u alignment);
-    NCVMemStackAllocator(NCVMemoryType memT, size_t capacity, Ncv32u alignment, void *reusePtr=NULL);
+    NCVMemStackAllocator(NCVMemoryType memT, std::size_t capacity, Ncv32u alignment, void *reusePtr=nullptr);
     virtual ~NCVMemStackAllocator();
 
-    virtual NCVStatus alloc(NCVMemSegment &seg, size_t size);
+    virtual NCVStatus alloc(NCVMemSegment &seg, std::size_t size);
     virtual NCVStatus dealloc(NCVMemSegment &seg);
 
     virtual NcvBool isInitialized() const;
@@ -456,7 +440,7 @@ public:
 
     virtual NCVMemoryType memType() const;
     virtual Ncv32u alignment() const;
-    virtual size_t maxSize() const;
+    virtual std::size_t maxSize() const;
 
 private:
 
@@ -465,8 +449,8 @@ private:
     Ncv8u *allocBegin;
     Ncv8u *begin;
     Ncv8u *end;
-    size_t currentSize;
-    size_t _maxSize;
+    std::size_t currentSize;
+    std::size_t _maxSize;
     NcvBool bReusesMemory;
 };
 
@@ -481,7 +465,7 @@ public:
     NCVMemNativeAllocator(NCVMemoryType memT, Ncv32u alignment);
     virtual ~NCVMemNativeAllocator();
 
-    virtual NCVStatus alloc(NCVMemSegment &seg, size_t size);
+    virtual NCVStatus alloc(NCVMemSegment &seg, std::size_t size);
     virtual NCVStatus dealloc(NCVMemSegment &seg);
 
     virtual NcvBool isInitialized() const;
@@ -489,7 +473,7 @@ public:
 
     virtual NCVMemoryType memType() const;
     virtual Ncv32u alignment() const;
-    virtual size_t maxSize() const;
+    virtual std::size_t maxSize() const;
 
 private:
 
@@ -498,8 +482,8 @@ private:
 
     NCVMemoryType _memType;
     Ncv32u _alignment;
-    size_t currentSize;
-    size_t _maxSize;
+    std::size_t currentSize;
+    std::size_t _maxSize;
 };
 
 
@@ -508,7 +492,7 @@ private:
 */
 NCV_EXPORTS NCVStatus memSegCopyHelper(void *dst, NCVMemoryType dstType,
                                        const void *src, NCVMemoryType srcType,
-                                       size_t sz, cudaStream_t cuStream);
+                                       std::size_t sz, cudaStream_t cuStream);
 
 
 NCV_EXPORTS NCVStatus memSegCopyHelper2D(void *dst, Ncv32u dstPitch, NCVMemoryType dstType,
@@ -535,12 +519,12 @@ public:
 
     void clear()
     {
-        _ptr = NULL;
+        _ptr = nullptr;
         _length = 0;
         _memtype = NCVMemoryTypeNone;
     }
 
-    NCVStatus copySolid(NCVVector<T> &dst, cudaStream_t cuStream, size_t howMuch=0) const
+    NCVStatus copySolid(NCVVector<T> &dst, cudaStream_t cuStream, std::size_t howMuch=0) const
     {
         if (howMuch == 0)
         {
@@ -553,8 +537,8 @@ public:
                 this->_length * sizeof(T) >= howMuch &&
                 howMuch > 0, NCV_MEM_COPY_ERROR);
         }
-        ncvAssertReturn((this->_ptr != NULL || this->_memtype == NCVMemoryTypeNone) && 
-                        (dst._ptr != NULL || dst._memtype == NCVMemoryTypeNone), NCV_NULL_PTR);
+        ncvAssertReturn((this->_ptr != nullptr || this->_memtype == NCVMemoryTypeNone) && 
+                        (dst._ptr != nullptr || dst._memtype == NCVMemoryTypeNone), NCV_NULL_PTR);
 
         NCVStatus ncvStat = NCV_SUCCESS;
         if (this->_memtype != NCVMemoryTypeNone)
@@ -568,13 +552,13 @@ public:
     }
 
     T *ptr() const {return this->_ptr;}
-    size_t length() const {return this->_length;}
+    std::size_t length() const {return this->_length;}
     NCVMemoryType memType() const {return this->_memtype;}
 
 protected:
 
     T *_ptr;
-    size_t _length;
+    std::size_t _length;
     NCVMemoryType _memtype;
 };
 
@@ -620,7 +604,7 @@ public:
 
     NcvBool isMemAllocated() const
     {
-        return (this->allocatedMem.begin.ptr != NULL) || (this->allocator.isCounting());
+        return (this->allocatedMem.begin.ptr != nullptr) || (this->allocator.isCounting());
     }
 
     Ncv32u getAllocatorsAlignment() const
@@ -707,7 +691,7 @@ public:
 
     void clear()
     {
-        _ptr = NULL;
+        _ptr = nullptr;
         _pitch = 0;
         _width = 0;
         _height = 0;
@@ -720,7 +704,7 @@ public:
     }
 
     //a side effect of this function is that it copies everything in a single chunk, so the "padding" will be overwritten
-    NCVStatus copySolid(NCVMatrix<T> &dst, cudaStream_t cuStream, size_t howMuch=0) const
+    NCVStatus copySolid(NCVMatrix<T> &dst, cudaStream_t cuStream, std::size_t howMuch=0) const
     {
         if (howMuch == 0)
         {
@@ -734,8 +718,8 @@ public:
                             this->_pitch * this->_height >= howMuch &&
                             howMuch > 0, NCV_MEM_COPY_ERROR);
         }
-        ncvAssertReturn((this->_ptr != NULL || this->_memtype == NCVMemoryTypeNone) && 
-                        (dst._ptr != NULL || dst._memtype == NCVMemoryTypeNone), NCV_NULL_PTR);
+        ncvAssertReturn((this->_ptr != nullptr || this->_memtype == NCVMemoryTypeNone) && 
+                        (dst._ptr != nullptr || dst._memtype == NCVMemoryTypeNone), NCV_NULL_PTR);
 
         NCVStatus ncvStat = NCV_SUCCESS;
         if (this->_memtype != NCVMemoryTypeNone)
@@ -849,7 +833,7 @@ public:
 
     NcvBool isMemAllocated() const
     {
-        return (this->allocatedMem.begin.ptr != NULL) || (this->allocator.isCounting());
+        return (this->allocatedMem.begin.ptr != nullptr) || (this->allocator.isCounting());
     }
 
     Ncv32u getAllocatorsAlignment() const

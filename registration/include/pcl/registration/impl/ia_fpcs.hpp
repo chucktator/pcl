@@ -62,7 +62,7 @@ pcl::getMeanPointDensity (const typename pcl::PointCloud<PointT>::ConstPtr &clou
 #ifdef _OPENMP
 #pragma omp parallel for \
   reduction (+:mean_dist, num) \
-  private (ids, dists_sqr) shared (tree, cloud) \
+  private (ids, dists_sqr) shared (tree, cloud) firstprivate (s, max_dist_sqr) \
   default (none)num_threads (nr_threads)
 #endif
 
@@ -99,7 +99,7 @@ pcl::getMeanPointDensity (const typename pcl::PointCloud<PointT>::ConstPtr &clou
 #ifdef _OPENMP
 #pragma omp parallel for \
   reduction (+:mean_dist, num) \
-  private (ids, dists_sqr) shared (tree, cloud, indices)    \
+  private (ids, dists_sqr) shared (tree, cloud, indices) firstprivate (s, max_dist_sqr) \
   default (none)num_threads (nr_threads)
 #endif
 
@@ -198,14 +198,14 @@ pcl::registration::FPCSInitialAlignment <PointSource, PointTarget, NormalT, Scal
             {
               // check and evaluate candidate matches and store them
               handleMatches (base_indices, matches, candidates);
-              if (candidates.size () != 0)
+              if (!candidates.empty ())
                 all_candidates[i] = candidates;
             }
           }
         }
 
         // check terminate early (time or fitness_score threshold reached)
-        abort = (candidates.size () > 0 ? candidates[0].fitness_score < score_threshold_ : abort);
+        abort = (!candidates.empty () ? candidates[0].fitness_score < score_threshold_ : abort);
         abort = (abort ? abort : timer.getTimeSeconds () > max_runtime_);
 
 
@@ -231,7 +231,7 @@ pcl::registration::FPCSInitialAlignment <PointSource, PointTarget, NormalT, Scal
 template <typename PointSource, typename PointTarget, typename NormalT, typename Scalar> bool
 pcl::registration::FPCSInitialAlignment <PointSource, PointTarget, NormalT, Scalar>::initCompute ()
 {
-  std::srand (static_cast <unsigned int> (std::time (NULL)));
+  std::srand (static_cast <unsigned int> (std::time (nullptr)));
 
   // basic pcl initialization
   if (!pcl::PCLBase <PointSource>::initCompute ())
@@ -244,7 +244,7 @@ pcl::registration::FPCSInitialAlignment <PointSource, PointTarget, NormalT, Scal
     return (false);
   }
 
-  if (!target_indices_ || target_indices_->size () == 0)
+  if (!target_indices_ || target_indices_->empty ())
   {
     target_indices_.reset (new std::vector <int> (static_cast <int> (target_->size ())));
     int index = 0;
@@ -618,7 +618,7 @@ pcl::registration::FPCSInitialAlignment <PointSource, PointTarget, NormalT, Scal
   }
 
   // return success if at least one correspondence was found
-  return (pairs.size () == 0 ? -1 : 0);
+  return (pairs.empty () ? -1 : 0);
 }
 
 
@@ -698,7 +698,7 @@ pcl::registration::FPCSInitialAlignment <PointSource, PointTarget, NormalT, Scal
   }
 
   // return unsuccessful if no match was found
-  return (matches.size () > 0 ? 0 : -1);
+  return (!matches.empty () ? 0 : -1);
 }
 
 
@@ -763,7 +763,7 @@ pcl::registration::FPCSInitialAlignment <PointSource, PointTarget, NormalT, Scal
   pcl::Correspondences &correspondences)
 {
   // calculate centroid of base and target
-  Eigen::Vector4f centre_base, centre_match;
+  Eigen::Vector4f centre_base {0, 0, 0, 0}, centre_match {0, 0, 0, 0};
   pcl::compute3DCentroid (*target_, base_indices, centre_base);
   pcl::compute3DCentroid (*input_, match_indices, centre_match);
 

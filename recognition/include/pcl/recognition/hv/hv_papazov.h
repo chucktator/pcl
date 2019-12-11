@@ -42,6 +42,8 @@
 #include <pcl/recognition/hv/hypotheses_verification.h>
 #include <boost/graph/adjacency_list.hpp>
 
+#include <memory>
+
 namespace pcl
 {
 
@@ -75,14 +77,14 @@ namespace pcl
         int id_;
     };
 
-    typedef boost::shared_ptr<RecognitionModel> RecognitionModelPtr;
+    using RecognitionModelPtr = std::shared_ptr<RecognitionModel>;
 
     std::vector<int> explained_by_RM_; //represents the points of scene_cloud_ that are explained by the recognition models
     std::vector<RecognitionModelPtr> recognition_models_;
     std::vector<std::vector<RecognitionModelPtr>> points_explained_by_rm_; //if inner size > 1, conflict
     std::map<int, RecognitionModelPtr> graph_id_model_map_;
 
-    typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, RecognitionModelPtr> Graph;
+    using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, RecognitionModelPtr>;
     Graph conflict_graph_;
 
     //builds the conflict_graph

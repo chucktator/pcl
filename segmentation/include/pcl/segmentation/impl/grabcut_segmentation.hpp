@@ -64,9 +64,9 @@ template <typename PointT>
 pcl::segmentation::grabcut::Color::operator PointT () const
 {
   PointT p;
-  p.r = static_cast<uint32_t> (r * 255);
-  p.g = static_cast<uint32_t> (g * 255);
-  p.b = static_cast<uint32_t> (b * 255);
+  p.r = static_cast<std::uint32_t> (r * 255);
+  p.g = static_cast<std::uint32_t> (g * 255);
+  p.b = static_cast<std::uint32_t> (b * 255);
   return (p);
 }
 
@@ -87,8 +87,8 @@ pcl::GrabCut<PointT>::initCompute ()
   }
 
   std::vector<pcl::PCLPointField> in_fields_;
-  if ((pcl::getFieldIndex<PointT> (*input_, "rgb", in_fields_) == -1) &&
-      (pcl::getFieldIndex<PointT> (*input_, "rgba", in_fields_) == -1))
+  if ((pcl::getFieldIndex<PointT> ("rgb", in_fields_) == -1) &&
+      (pcl::getFieldIndex<PointT> ("rgba", in_fields_) == -1))
   {
     PCL_ERROR ("[pcl::GrabCut::initCompute ()] No RGB data available, aborting!");
     return (false);
@@ -268,7 +268,7 @@ pcl::GrabCut<PointT>::initGraph ()
   graph_nodes_.clear ();
   graph_nodes_.resize (indices_->size ());
   int start = graph_.addNodes (indices_->size ());
-  for (size_t idx = 0; idx < indices_->size (); ++idx)
+  for (std::size_t idx = 0; idx < indices_->size (); ++idx)
   {
     graph_nodes_[idx] = start;
     ++start;
@@ -284,8 +284,8 @@ pcl::GrabCut<PointT>::initGraph ()
     {
       case TrimapUnknown :
       {
-        fore = static_cast<float> (-log (background_GMM_.probabilityDensity (image_->points[point_index])));
-        back = static_cast<float> (-log (foreground_GMM_.probabilityDensity (image_->points[point_index])));
+        fore = static_cast<float> (-std::log (background_GMM_.probabilityDensity (image_->points[point_index])));
+        back = static_cast<float> (-std::log (foreground_GMM_.probabilityDensity (image_->points[point_index])));
         break;
       }
       case TrimapBackground :
@@ -342,7 +342,7 @@ pcl::GrabCut<PointT>::computeNLinksNonOrganized ()
           // We saved the color distance previously at the computeBeta stage for optimization purpose
           float color_distance = *weights_it;
           // Set the real weight
-          *weights_it = static_cast<float> (lambda_ * exp (-beta_ * color_distance) / sqrt (*dists_it));
+          *weights_it = static_cast<float> (lambda_ * std::exp (-beta_ * color_distance) / sqrt (*dists_it));
         }
       }
     }
@@ -362,16 +362,16 @@ pcl::GrabCut<PointT>::computeNLinksOrganized ()
       NLinks &links = n_links_[point_index];
 
       if( x > 0 && y < image_->height-1 )
-        links.weights[0] = lambda_ * exp (-beta_ * links.weights[0]) / links.dists[0];
+        links.weights[0] = lambda_ * std::exp (-beta_ * links.weights[0]) / links.dists[0];
 
       if( y < image_->height-1 )
-        links.weights[1] = lambda_ * exp (-beta_ * links.weights[1]) / links.dists[1];
+        links.weights[1] = lambda_ * std::exp (-beta_ * links.weights[1]) / links.dists[1];
 
       if( x < image_->width-1 && y < image_->height-1 )
-        links.weights[2] = lambda_ * exp (-beta_ * links.weights[2]) / links.dists[2];
+        links.weights[2] = lambda_ * std::exp (-beta_ * links.weights[2]) / links.dists[2];
 
       if( x < image_->width-1 )
-        links.weights[3] = lambda_ * exp (-beta_ * links.weights[3]) / links.dists[3];
+        links.weights[3] = lambda_ * std::exp (-beta_ * links.weights[3]) / links.dists[3];
     }
 	}
 }
@@ -436,7 +436,7 @@ pcl::GrabCut<PointT>::computeBetaOrganized ()
       {
         std::size_t upleft = (y+1)  * input_->width + x - 1;
         links.indices[0] = upleft;
-        links.dists[0] = sqrt (2.f);
+        links.dists[0] = std::sqrt (2.f);
         float color_dist =  squaredEuclideanDistance (image_->points[point_index],
                                                       image_->points[upleft]);
         links.weights[0] = color_dist;
@@ -460,7 +460,7 @@ pcl::GrabCut<PointT>::computeBetaOrganized ()
       {
         std::size_t upright = (y+1) * input_->width + x + 1;
         links.indices[2] = upright;
-        links.dists[2] = sqrt (2.f);
+        links.dists[2] = std::sqrt (2.f);
         float color_dist =  squaredEuclideanDistance (image_->points[point_index],
                                                       image_->points [upright]);
         links.weights[2] = color_dist;

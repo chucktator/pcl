@@ -12,8 +12,10 @@
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/apps/3d_rec_framework/utils/vtk_model_sampling.h>
-#include <boost/function.hpp>
+
 #include <vtkTransformPolyDataFilter.h>
+
+#include <functional>
 
 namespace pcl
 {
@@ -28,8 +30,8 @@ namespace pcl
     template<typename PointInT>
       class MeshSource : public Source<PointInT>
       {
-        typedef Source<PointInT> SourceT;
-        typedef Model<PointInT> ModelT;
+        using SourceT = Source<PointInT>;
+        using ModelT = Model<PointInT>;
 
         using SourceT::path_;
         using SourceT::models_;
@@ -42,7 +44,7 @@ namespace pcl
         float radius_sphere_;
         float view_angle_;
         bool gen_organized_;
-        boost::function<bool
+        std::function<bool
         (const Eigen::Vector3f &)> campos_constraints_func_;
 
       public:
@@ -62,7 +64,7 @@ namespace pcl
         }
 
         void
-        setCamPosConstraints (boost::function<bool
+        setCamPosConstraints (std::function<bool
         (const Eigen::Vector3f &)> & bb)
         {
           campos_constraints_func_ = bb;
@@ -104,17 +106,16 @@ namespace pcl
             //load views, poses and self-occlusions
             std::vector < std::string > view_filenames;
             int number_of_views = 0;
-            bf::directory_iterator end_itr;
-            for (bf::directory_iterator itr (trained_dir); itr != end_itr; ++itr)
+            for (const auto& dir_entry : bf::directory_iterator(trained_dir))
             {
               //check if its a directory, then get models in it
-              if (!(bf::is_directory (*itr)))
+              if (!(bf::is_directory (dir_entry)))
               {
                 //check that it is a ply file and then add, otherwise ignore..
                 std::vector < std::string > strs;
                 std::vector < std::string > strs_;
 
-                std::string file = (itr->path ().filename ()).string();
+                std::string file = (dir_entry.path ().filename ()).string();
 
                 boost::split (strs, file, boost::is_any_of ("."));
                 boost::split (strs_, file, boost::is_any_of ("_"));
@@ -123,7 +124,7 @@ namespace pcl
 
                 if (extension == "pcd" && strs_[0] == "view")
                 {
-                  view_filenames.push_back ((itr->path ().filename ()).string());
+                  view_filenames.push_back ((dir_entry.path ().filename ()).string());
 
                   number_of_views++;
                 }
@@ -209,7 +210,7 @@ namespace pcl
             model.poses_.reset (new std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > ());
             model.self_occlusions_.reset (new std::vector<float> ());
 
-            for (size_t i = 0; i < views_xyz_orig.size (); i++)
+            for (std::size_t i = 0; i < views_xyz_orig.size (); i++)
             {
               model.views_->push_back (views_xyz_orig[i]);
               model.poses_->push_back (poses[i]);
@@ -220,7 +221,7 @@ namespace pcl
             direc << dir << "/" << model.class_ << "/" << model.id_;
             this->createClassAndModelDirectories (dir, model.class_, model.id_);
 
-            for (size_t i = 0; i < model.views_->size (); i++)
+            for (std::size_t i = 0; i < model.views_->size (); i++)
             {
               //save generated model for future use
               std::stringstream path_view;
