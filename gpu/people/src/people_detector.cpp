@@ -160,7 +160,7 @@ pcl::gpu::people::PeopleDetector::process (const pcl::PointCloud<PointTC>::Const
 
   const float qnan = std::numeric_limits<float>::quiet_NaN();
 
-  for(size_t i = 0; i < cloud->points.size(); ++i)
+  for(std::size_t i = 0; i < cloud->points.size(); ++i)
   {
     cloud_host_.points[i].x = cloud->points[i].x;
     cloud_host_.points[i].y = cloud->points[i].y;
@@ -188,7 +188,7 @@ pcl::gpu::people::PeopleDetector::process ()
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // if we found a neck display the tree, and continue with processing
-  if(sorted[Neck].size() != 0)
+  if(!sorted[Neck].empty ())
   {
     int c = 0;
     Tree2 t;
@@ -215,7 +215,7 @@ pcl::gpu::people::PeopleDetector::process ()
     const RDFBodyPartsDetector::BlobMatrix& sorted2 = rdf_detector_->getBlobMatrix();
 
     //brief Test if the second tree is build up correctly
-    if(sorted2[Neck].size() != 0)
+    if(!sorted2[Neck].empty ())
     {      
       Tree2 t2;
       buildTree(sorted2, cloud_host_, Neck, c, t2);
@@ -224,14 +224,14 @@ pcl::gpu::people::PeopleDetector::process ()
       {
         if(t2.parts_lid[f] == NO_CHILD)
         {
-          cerr << "1;";
+          std::cerr << "1;";
           par++;
         }
         else
-           cerr << "0;";
+           std::cerr << "0;";
       }*/
       //static int counter = 0; // TODO move this logging to PeopleApp
-      //cerr << t2.nr_parts << ";" << par << ";" << t2.total_dist_error << ";" << t2.norm_dist_error << ";" << counter++ << ";" << endl;
+      //std::cerr << t2.nr_parts << ";" << par << ";" << t2.total_dist_error << ";" << t2.norm_dist_error << ";" << counter++ << ";" << std::endl;
       return 2;
     }
     return 1;
@@ -247,7 +247,7 @@ pcl::gpu::people::PeopleDetector::processProb (const pcl::PointCloud<PointTC>::C
 
   const float qnan = std::numeric_limits<float>::quiet_NaN();
 
-  for(size_t i = 0; i < cloud->points.size(); ++i)
+  for(std::size_t i = 0; i < cloud->points.size(); ++i)
   {
     cloud_host_color_.points[i].x  = cloud_host_.points[i].x = cloud->points[i].x;
     cloud_host_color_.points[i].y  = cloud_host_.points[i].y = cloud->points[i].y;
@@ -327,7 +327,7 @@ pcl::gpu::people::PeopleDetector::processProb ()
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // if we found a neck display the tree, and continue with processing
-  if(sorted[Neck].size() != 0)
+  if(!sorted[Neck].empty ())
   {
     int c = 0;
     Tree2 t;
@@ -366,7 +366,7 @@ pcl::gpu::people::PeopleDetector::processProb ()
     const RDFBodyPartsDetector::BlobMatrix& sorted2 = rdf_detector_->getBlobMatrix();
 
     //brief Test if the second tree is build up correctly
-    if(sorted2[Neck].size() != 0)
+    if(!sorted2[Neck].empty ())
     {
       Tree2 t2;
       buildTree(sorted2, cloud_host_, Neck, c, t2, person_attribs_);
@@ -375,15 +375,15 @@ pcl::gpu::people::PeopleDetector::processProb ()
       {
         if(node_type == NO_CHILD)
         {
-          cerr << "1;";
+          std::cerr << "1;";
           //par++;
         }
         else
-           cerr << "0;";
+           std::cerr << "0;";
       }
       std::cerr << std::endl;
       //static int counter = 0; // TODO move this logging to PeopleApp
-      //cerr << t2.nr_parts << ";" << par << ";" << t2.total_dist_error << ";" << t2.norm_dist_error << ";" << counter++ << ";" << endl;
+      //std::cerr << t2.nr_parts << ";" << par << ";" << t2.total_dist_error << ";" << t2.norm_dist_error << ";" << counter++ << ";" << std::endl;
       first_iteration_ = false;
       return 2;
     }
@@ -436,8 +436,8 @@ namespace
       float y1 = (b - sqrt (det)) / a;
       float y2 = (b + sqrt (det)) / a;
 
-      min = (int)std::min(floor(y1), floor(y2));
-      max = (int)std::max( ceil(y1),  ceil(y2));
+      min = (int)std::min(std::floor(y1), std::floor(y2));
+      max = (int)std::max( std::ceil(y1),  std::ceil(y2));
       minY = std::min (rows - 1, std::max (0, min));
       maxY = std::max (std::min (rows - 1, max), 0);
     }
@@ -456,8 +456,8 @@ namespace
       float x1 = (b - sqrt (det)) / a;
       float x2 = (b + sqrt (det)) / a;
  
-      min = (int)std::min (floor(x1), floor(x2));
-      max = (int)std::max ( ceil(x1),  ceil(x2));
+      min = (int)std::min (std::floor(x1), std::floor(x2));
+      max = (int)std::max ( std::ceil(x1),  std::ceil(x2));
       minX = std::min (cols- 1, std::max (0, min));
       maxX = std::max (std::min (cols - 1, max), 0);
     }
@@ -536,7 +536,7 @@ pcl::gpu::people::PeopleDetector::shs5(const pcl::PointCloud<PointT> &cloud, con
           {
             float h_l = hue[idx];
 
-            if (fabs(h_l - h) < DELTA_HUE_SHS)
+            if (std::abs(h_l - h) < DELTA_HUE_SHS)
             {                   
               seed_queue.push_back (idx);
               mask[idx] = 255;

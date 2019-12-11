@@ -85,7 +85,7 @@ pcl::BoundaryEstimation<PointInT, PointNT, PointOutT>::isBoundaryPoint (
     if (delta == Eigen::Vector4f::Zero())
       continue;
 
-    angles[cp++] = atan2f (v.dot (delta), u.dot (delta)); // the angles are fine between -PI and PI too
+    angles[cp++] = std::atan2 (v.dot (delta), u.dot (delta)); // the angles are fine between -PI and PI too
   }
   if (cp == 0)
     return (false);
@@ -94,7 +94,7 @@ pcl::BoundaryEstimation<PointInT, PointNT, PointOutT>::isBoundaryPoint (
   std::sort (angles.begin (), angles.end ());
 
   // Compute the maximal angle difference between two consecutive angles
-  for (size_t i = 0; i < angles.size () - 1; ++i)
+  for (std::size_t i = 0; i < angles.size () - 1; ++i)
   {
     dif = angles[i + 1] - angles[i];
     if (max_dif < dif)
@@ -106,10 +106,7 @@ pcl::BoundaryEstimation<PointInT, PointNT, PointOutT>::isBoundaryPoint (
     max_dif = dif;
 
   // Check results
-  if (max_dif > angle_threshold)
-    return (true);
-  else
-    return (false);
+  return (max_dif > angle_threshold);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,11 +125,11 @@ pcl::BoundaryEstimation<PointInT, PointNT, PointOutT>::computeFeature (PointClou
   if (input_->is_dense)
   {
     // Iterating over the entire index vector
-    for (size_t idx = 0; idx < indices_->size (); ++idx)
+    for (std::size_t idx = 0; idx < indices_->size (); ++idx)
     {
       if (this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0)
       {
-        output.points[idx].boundary_point = std::numeric_limits<uint8_t>::quiet_NaN ();
+        output.points[idx].boundary_point = std::numeric_limits<std::uint8_t>::quiet_NaN ();
         output.is_dense = false;
         continue;
       }
@@ -149,12 +146,12 @@ pcl::BoundaryEstimation<PointInT, PointNT, PointOutT>::computeFeature (PointClou
   else
   {
     // Iterating over the entire index vector
-    for (size_t idx = 0; idx < indices_->size (); ++idx)
+    for (std::size_t idx = 0; idx < indices_->size (); ++idx)
     {
       if (!isFinite ((*input_)[(*indices_)[idx]]) ||
           this->searchForNeighbors ((*indices_)[idx], search_parameter_, nn_indices, nn_dists) == 0)
       {
-        output.points[idx].boundary_point = std::numeric_limits<uint8_t>::quiet_NaN ();
+        output.points[idx].boundary_point = std::numeric_limits<std::uint8_t>::quiet_NaN ();
         output.is_dense = false;
         continue;
       }

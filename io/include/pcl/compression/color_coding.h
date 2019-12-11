@@ -62,9 +62,9 @@ namespace pcl
       {
 
       // public typedefs
-        typedef pcl::PointCloud<PointT> PointCloud;
-        typedef boost::shared_ptr<PointCloud> PointCloudPtr;
-        typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
+        using PointCloud = pcl::PointCloud<PointT>;
+        using PointCloudPtr = typename PointCloud::Ptr;
+        using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
       public:
 
@@ -72,8 +72,7 @@ namespace pcl
          *
          * */
         ColorCoding () :
-          output_ (), pointAvgColorDataVector_ (), pointAvgColorDataVector_Iterator_ (),
-          pointDiffColorDataVector_ (), pointDiffColorDataVector_Iterator_ (), colorBitReduction_ (0)
+          output_ (), colorBitReduction_ (0)
         {
         }
 
@@ -170,8 +169,8 @@ namespace pcl
           unsigned int avgBlue = 0;
 
           // iterate over points
-          size_t len = indexVector_arg.size ();
-          for (size_t i = 0; i < len; i++)
+          std::size_t len = indexVector_arg.size ();
+          for (std::size_t i = 0; i < len; i++)
           {
             // get color information from points
             const int& idx = indexVector_arg[i];
@@ -220,8 +219,8 @@ namespace pcl
           avgRed = avgGreen = avgBlue = 0;
 
           // iterate over points
-          size_t len = indexVector_arg.size ();
-          for (size_t i = 0; i < len; i++)
+          std::size_t len = indexVector_arg.size ();
+          for (std::size_t i = 0; i < len; i++)
           {
             // get color information from point
             const int& idx = indexVector_arg[i];
@@ -247,7 +246,7 @@ namespace pcl
             avgBlue  /= static_cast<unsigned int> (len);
 
             // iterate over points for differential encoding
-            for (size_t i = 0; i < len; i++)
+            for (std::size_t i = 0; i < len; i++)
             {
               const int& idx = indexVector_arg[i];
               const char* idxPointPtr = reinterpret_cast<const char*> (&inputCloud_arg->points[idx]);
@@ -307,7 +306,7 @@ namespace pcl
           avgBlue = static_cast<unsigned char> (avgBlue << colorBitReduction_);
 
           // iterate over points
-          for (size_t i = 0; i < pointCount; i++)
+          for (std::size_t i = 0; i < pointCount; i++)
           {
             unsigned int colorInt;
             if (pointCount > 1)
@@ -355,7 +354,7 @@ namespace pcl
           unsigned int pointCount = static_cast<unsigned int> (endIdx_arg - beginIdx_arg);
 
           // iterate over points
-          for (size_t i = 0; i < pointCount; i++)
+          for (std::size_t i = 0; i < pointCount; i++)
           {
             char* idxPointPtr = reinterpret_cast<char*> (&outputCloud_arg->points[beginIdx_arg + i]);
             int& pointColor = *reinterpret_cast<int*> (idxPointPtr+rgba_offset_arg);

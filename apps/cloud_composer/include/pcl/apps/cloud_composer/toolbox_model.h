@@ -68,9 +68,8 @@ namespace pcl
       Q_OBJECT
       
     public:
-      ToolBoxModel (QTreeView* tool_view = 0, QTreeView* parameter_view = 0, QObject *parent = 0);
+      ToolBoxModel (QTreeView* tool_view = nullptr, QTreeView* parameter_view = nullptr, QObject *parent = nullptr);
       ToolBoxModel (const ToolBoxModel& to_copy);
-      ~ToolBoxModel ();
       
       void
       addTool (ToolFactory* tool_factory);
@@ -108,7 +107,7 @@ namespace pcl
       
     private:
       QStandardItem* 
-      addToolGroup (QString tool_group_name);
+      addToolGroup (const QString& tool_group_name);
       
       QTreeView* tool_view_;
       QTreeView* parameter_view_;

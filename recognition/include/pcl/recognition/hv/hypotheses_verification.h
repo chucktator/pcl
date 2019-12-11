@@ -230,7 +230,7 @@ namespace pcl
       else
       {
         //we need to reason about occlusions before setting the model
-        if (scene_cloud_ == 0)
+        if (scene_cloud_ == nullptr)
         {
           PCL_ERROR("setSceneCloud should be called before adding the model if reasoning about occlusions...");
         }
@@ -246,7 +246,7 @@ namespace pcl
           zbuffer_scene.computeDepthMap (occlusion_cloud_, true);
         }
 
-        for (size_t i = 0; i < models.size (); i++)
+        for (std::size_t i = 0; i < models.size (); i++)
         {
 
           //self-occlusions

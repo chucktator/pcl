@@ -54,17 +54,19 @@ class CopyCommand : public Command
     CopyCommand (CopyBufferPtr copy_buffer_ptr,
                  ConstSelectionPtr selection_ptr,
                  ConstCloudPtr cloud_ptr)
-      : copy_buffer_ptr_(copy_buffer_ptr), selection_ptr_(selection_ptr),
-        cloud_ptr_(cloud_ptr)
+      : copy_buffer_ptr_(std::move(copy_buffer_ptr)), selection_ptr_(std::move(selection_ptr)),
+        cloud_ptr_(std::move(cloud_ptr))
     {
       has_undo_ = false;
     }
 
-    /// @brief Destructor
-    ~CopyCommand ()
-    {
-    }
-  
+    /// @brief Copy constructor - commands are non-copyable
+    CopyCommand (const CopyCommand&) = delete;
+
+    /// @brief Equal operator - commands are non-copyable
+    CopyCommand&
+    operator= (const CopyCommand&) = delete;
+
   protected:
     /// @brief Copy the selected points into the copy buffer.
     /// @pre Assumes the constructor was given appropriate pointers to the
@@ -85,25 +87,6 @@ class CopyCommand : public Command
     }
 
   private:
-    /// @brief Default constructor - object is not default constructable
-    CopyCommand ()
-    {
-      assert(false);
-    }
-
-    /// @brief Copy constructor - commands are non-copyable
-    CopyCommand (const CopyCommand&)
-    {
-      assert(false);
-    }
-
-    /// @brief Equal operator - commands are non-copyable
-    CopyCommand&
-    operator= (const CopyCommand&)
-    {
-      assert(false); return (*this);
-    }
-
     /// a pointer to the copy buffer.
     CopyBufferPtr copy_buffer_ptr_;
 

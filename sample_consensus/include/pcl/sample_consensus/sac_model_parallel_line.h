@@ -67,11 +67,12 @@ namespace pcl
     public:
       using SampleConsensusModel<PointT>::model_name_;
 
-      typedef typename SampleConsensusModelLine<PointT>::PointCloud PointCloud;
-      typedef typename SampleConsensusModelLine<PointT>::PointCloudPtr PointCloudPtr;
-      typedef typename SampleConsensusModelLine<PointT>::PointCloudConstPtr PointCloudConstPtr;
+      using PointCloud = typename SampleConsensusModelLine<PointT>::PointCloud;
+      using PointCloudPtr = typename SampleConsensusModelLine<PointT>::PointCloudPtr;
+      using PointCloudConstPtr = typename SampleConsensusModelLine<PointT>::PointCloudConstPtr;
 
-      typedef boost::shared_ptr<SampleConsensusModelParallelLine> Ptr;
+      using Ptr = boost::shared_ptr<SampleConsensusModelParallelLine<PointT> >;
+      using ConstPtr = boost::shared_ptr<const SampleConsensusModelParallelLine<PointT>>;
 
       /** \brief Constructor for base SampleConsensusModelParallelLine.
         * \param[in] cloud the input point cloud dataset
@@ -155,7 +156,7 @@ namespace pcl
       getDistancesToModel (const Eigen::VectorXf &model_coefficients,
                            std::vector<double> &distances) const override;
 
-      /** \brief Return an unique id for this model (SACMODEL_PARALLEL_LINE). */
+      /** \brief Return a unique id for this model (SACMODEL_PARALLEL_LINE). */
       inline pcl::SacModel
       getModelType () const override { return (SACMODEL_PARALLEL_LINE); }
 

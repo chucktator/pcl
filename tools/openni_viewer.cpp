@@ -44,6 +44,8 @@
 #include <pcl/console/print.h>
 #include <pcl/console/parse.h>
 
+#include <mutex>
+
 #define SHOW_FPS 1
 #if SHOW_FPS
 #define FPS_CALC(_WHAT_) \
@@ -105,14 +107,13 @@ template <typename PointType>
 class OpenNIViewer
 {
   public:
-    typedef pcl::PointCloud<PointType> Cloud;
-    typedef typename Cloud::ConstPtr CloudConstPtr;
+    using Cloud = pcl::PointCloud<PointType>;
+    using CloudConstPtr = typename Cloud::ConstPtr;
 
     OpenNIViewer (pcl::Grabber& grabber)
       : cloud_viewer_ (new pcl::visualization::PCLVisualizer ("PCL OpenNI cloud"))
-      , image_viewer_ ()
       , grabber_ (grabber)
-      , rgb_data_ (0), rgb_data_size_ (0)
+      , rgb_data_ (nullptr), rgb_data_size_ (0)
     {
     }
 
@@ -120,23 +121,22 @@ class OpenNIViewer
     cloud_callback (const CloudConstPtr& cloud)
     {
       FPS_CALC ("cloud callback");
-      boost::mutex::scoped_lock lock (cloud_mutex_);
+      std::lock_guard<std::mutex> lock (cloud_mutex_);
       cloud_ = cloud;
     }
 
     void
-    image_callback (const boost::shared_ptr<openni_wrapper::Image>& image)
+    image_callback (const openni_wrapper::Image::Ptr& image)
     {
       FPS_CALC ("image callback");
-      boost::mutex::scoped_lock lock (image_mutex_);
+      std::lock_guard<std::mutex> lock (image_mutex_);
       image_ = image;
       
       if (image->getEncoding () != openni_wrapper::Image::RGB)
       {
         if (rgb_data_size_ < image->getWidth () * image->getHeight ())
         {
-          if (rgb_data_)
-            delete [] rgb_data_;
+          delete [] rgb_data_;
           rgb_data_size_ = image->getWidth () * image->getHeight ();
           rgb_data_ = new unsigned char [rgb_data_size_ * 3];
         }
@@ -148,13 +148,13 @@ class OpenNIViewer
     keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
     {
       if (event.getKeyCode ())
-        cout << "the key \'" << event.getKeyCode() << "\' (" << event.getKeyCode() << ") was";
+        std::cout << "the key \'" << event.getKeyCode() << "\' (" << event.getKeyCode() << ") was";
       else
-        cout << "the special key \'" << event.getKeySym() << "\' was";
+        std::cout << "the special key \'" << event.getKeySym() << "\' was";
       if (event.keyDown())
-        cout << " pressed" << endl;
+        std::cout << " pressed" << std::endl;
       else
-        cout << " released" << endl;
+        std::cout << " released" << std::endl;
     }
     
     void 
@@ -162,7 +162,7 @@ class OpenNIViewer
     {
       if (mouse_event.getType() == pcl::visualization::MouseEvent::MouseButtonPress && mouse_event.getButton() == pcl::visualization::MouseEvent::LeftButton)
       {
-        cout << "left button pressed @ " << mouse_event.getX () << " , " << mouse_event.getY () << endl;
+        std::cout << "left button pressed @ " << mouse_event.getX () << " , " << mouse_event.getY () << std::endl;
       }
     }
 
@@ -174,16 +174,16 @@ class OpenNIViewer
     {
       cloud_viewer_->registerMouseCallback (&OpenNIViewer::mouse_callback, *this);
       cloud_viewer_->registerKeyboardCallback(&OpenNIViewer::keyboard_callback, *this);
-      boost::function<void (const CloudConstPtr&) > cloud_cb = boost::bind (&OpenNIViewer::cloud_callback, this, _1);
+      std::function<void (const CloudConstPtr&)> cloud_cb = [this] (const CloudConstPtr& cloud) { cloud_callback (cloud); };
       boost::signals2::connection cloud_connection = grabber_.registerCallback (cloud_cb);
       
       boost::signals2::connection image_connection;
-      if (grabber_.providesCallback<void (const boost::shared_ptr<openni_wrapper::Image>&)>())
+      if (grabber_.providesCallback<void (const openni_wrapper::Image::Ptr&)>())
       {
         image_viewer_.reset (new pcl::visualization::ImageViewer ("PCL OpenNI image"));
         image_viewer_->registerMouseCallback (&OpenNIViewer::mouse_callback, *this);
         image_viewer_->registerKeyboardCallback(&OpenNIViewer::keyboard_callback, *this);
-        boost::function<void (const boost::shared_ptr<openni_wrapper::Image>&) > image_cb = boost::bind (&OpenNIViewer::image_callback, this, _1);
+        std::function<void (const openni_wrapper::Image::Ptr&)> image_cb = [this] (const openni_wrapper::Image::Ptr& img) { image_callback (img); };
         image_connection = grabber_.registerCallback (image_cb);
       }
       
@@ -193,7 +193,7 @@ class OpenNIViewer
 
       while (!(cloud_viewer_->wasStopped () || (image_viewer_ && image_viewer_->wasStopped ())))
       {
-        boost::shared_ptr<openni_wrapper::Image> image;
+        openni_wrapper::Image::Ptr image;
         CloudConstPtr cloud;
 
         cloud_viewer_->spinOnce ();
@@ -252,19 +252,18 @@ class OpenNIViewer
       
       cloud_connection.disconnect ();
       image_connection.disconnect ();
-      if (rgb_data_)
-        delete[] rgb_data_;
+      delete[] rgb_data_;
     }
     
     pcl::visualization::PCLVisualizer::Ptr cloud_viewer_;
     pcl::visualization::ImageViewer::Ptr image_viewer_;
     
     pcl::Grabber& grabber_;
-    boost::mutex cloud_mutex_;
-    boost::mutex image_mutex_;
+    std::mutex cloud_mutex_;
+    std::mutex image_mutex_;
     
     CloudConstPtr cloud_;
-    boost::shared_ptr<openni_wrapper::Image> image_;
+    openni_wrapper::Image::Ptr image_;
     unsigned char* rgb_data_;
     unsigned rgb_data_size_;
 };
@@ -290,26 +289,26 @@ main (int argc, char** argv)
       printHelp(argc, argv);
       return 0;
     }
-    else if (device_id == "-l")
+    if (device_id == "-l")
     {
       if (argc >= 3)
       {
         pcl::OpenNIGrabber grabber(argv[2]);
-        boost::shared_ptr<openni_wrapper::OpenNIDevice> device = grabber.getDevice();
-        cout << "Supported depth modes for device: " << device->getVendorName() << " , " << device->getProductName() << endl;
+        auto device = grabber.getDevice();
+        std::cout << "Supported depth modes for device: " << device->getVendorName() << " , " << device->getProductName() << std::endl;
         std::vector<std::pair<int, XnMapOutputMode > > modes = grabber.getAvailableDepthModes();
         for (std::vector<std::pair<int, XnMapOutputMode > >::const_iterator it = modes.begin(); it != modes.end(); ++it)
         {
-          cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << endl;
+          std::cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << std::endl;
         }
 
         if (device->hasImageStream ())
         {
-          cout << endl << "Supported image modes for device: " << device->getVendorName() << " , " << device->getProductName() << endl;
+          std::cout << std::endl << "Supported image modes for device: " << device->getVendorName() << " , " << device->getProductName() << std::endl;
           modes = grabber.getAvailableImageModes();
           for (std::vector<std::pair<int, XnMapOutputMode > >::const_iterator it = modes.begin(); it != modes.end(); ++it)
           {
-            cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << endl;
+            std::cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << std::endl;
           }
         }
       }
@@ -320,15 +319,15 @@ main (int argc, char** argv)
         {
           for (unsigned deviceIdx = 0; deviceIdx < driver.getNumberDevices(); ++deviceIdx)
           {
-            cout << "Device: " << deviceIdx + 1 << ", vendor: " << driver.getVendorName(deviceIdx) << ", product: " << driver.getProductName(deviceIdx)
-              << ", connected: " << driver.getBus(deviceIdx) << " @ " << driver.getAddress(deviceIdx) << ", serial number: \'" << driver.getSerialNumber(deviceIdx) << "\'" << endl;
+            std::cout << "Device: " << deviceIdx + 1 << ", vendor: " << driver.getVendorName(deviceIdx) << ", product: " << driver.getProductName(deviceIdx)
+              << ", connected: " << driver.getBus(deviceIdx) << " @ " << driver.getAddress(deviceIdx) << ", serial number: \'" << driver.getSerialNumber(deviceIdx) << "\'" << std::endl;
           }
 
         }
         else
-          cout << "No devices connected." << endl;
+          std::cout << "No devices connected." << std::endl;
         
-        cout <<"Virtual Devices available: ONI player" << endl;
+        std::cout <<"Virtual Devices available: ONI player" << std::endl;
       }
       return 0;
     }
@@ -337,7 +336,7 @@ main (int argc, char** argv)
   {
     openni_wrapper::OpenNIDriver& driver = openni_wrapper::OpenNIDriver::getInstance();
     if (driver.getNumberDevices() > 0)
-      cout << "Device Id not set, using first device." << endl;
+      std::cout << "Device Id not set, using first device." << std::endl;
   }
   
   unsigned mode;

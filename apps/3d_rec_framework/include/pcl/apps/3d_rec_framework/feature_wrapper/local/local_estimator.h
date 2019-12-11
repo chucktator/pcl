@@ -14,6 +14,8 @@
 #include <pcl/keypoints/sift_keypoint.h>
 #include <pcl/keypoints/susan.h>
 
+#include <memory>
+
 namespace pcl
 {
   template<>
@@ -36,8 +38,8 @@ namespace pcl
       class KeypointExtractor
       {
       protected:
-        typedef typename pcl::PointCloud<PointInT>::Ptr PointInTPtr;
-        typedef typename pcl::PointCloud<PointInT>::Ptr PointOutTPtr;
+        using PointInTPtr = typename pcl::PointCloud<PointInT>::Ptr;
+        using PointOutTPtr = typename pcl::PointCloud<PointInT>::Ptr;
         typename pcl::PointCloud<PointInT>::Ptr input_;
         float radius_;
 
@@ -78,13 +80,13 @@ namespace pcl
       class UniformSamplingExtractor : public KeypointExtractor<PointInT>
       {
       private:
-        typedef typename pcl::PointCloud<PointInT>::Ptr PointInTPtr;
+        using PointInTPtr = typename pcl::PointCloud<PointInT>::Ptr;
         bool filter_planar_;
         using KeypointExtractor<PointInT>::input_;
         using KeypointExtractor<PointInT>::radius_;
         float sampling_density_;
-        boost::shared_ptr<std::vector<std::vector<int> > > neighborhood_indices_;
-        boost::shared_ptr<std::vector<std::vector<float> > > neighborhood_dist_;
+        std::shared_ptr<std::vector<std::vector<int>>> neighborhood_indices_;
+        std::shared_ptr<std::vector<std::vector<float>>> neighborhood_dist_;
 
         void
         filterPlanar (PointInTPtr & input, PointInTPtr & keypoints_cloud)
@@ -106,7 +108,7 @@ namespace pcl
           filtered_keypoints.points.resize (keypoints_cloud->points.size ());
           int good = 0;
 
-          for (size_t i = 0; i < keypoints_cloud->points.size (); i++)
+          for (std::size_t i = 0; i < keypoints_cloud->points.size (); i++)
           {
 
             if (tree->radiusSearch (keypoints_cloud->points[i], radius_, (*neighborhood_indices_)[good], (*neighborhood_dist_)[good]))
@@ -127,7 +129,7 @@ namespace pcl
                 PCL_ERROR("Eigen sum is not finite\n");
               }
 
-              if ((fabs (eigenValues[0] - eigenValues[1]) < 1.5e-4) || (eigsum != 0 && fabs (eigenValues[0] / eigsum) > 1.e-2))
+              if ((std::abs (eigenValues[0] - eigenValues[1]) < 1.5e-4) || (eigsum != 0 && std::abs (eigenValues[0] / eigsum) > 1.e-2))
               {
                 //region is not planar, add to filtered keypoint
                 keypoints_cloud->points[good] = keypoints_cloud->points[i];
@@ -178,7 +180,7 @@ namespace pcl
     template<typename PointInT>
       class SIFTKeypointExtractor : public KeypointExtractor<PointInT>
       {
-        typedef typename pcl::PointCloud<PointInT>::Ptr PointInTPtr;
+        using PointInTPtr = typename pcl::PointCloud<PointInT>::Ptr;
         using KeypointExtractor<PointInT>::input_;
         using KeypointExtractor<PointInT>::radius_;
 
@@ -202,7 +204,7 @@ namespace pcl
     template<typename PointInT>
       class SIFTSurfaceKeypointExtractor : public KeypointExtractor<PointInT>
       {
-        typedef typename pcl::PointCloud<PointInT>::Ptr PointInTPtr;
+        using PointInTPtr = typename pcl::PointCloud<PointInT>::Ptr;
         pcl::PointCloud<pcl::Normal>::Ptr normals_;
         using KeypointExtractor<PointInT>::input_;
         using KeypointExtractor<PointInT>::radius_;
@@ -232,7 +234,7 @@ namespace pcl
           input_cloud->width = input_->width;
           input_cloud->height = input_->height;
           input_cloud->points.resize (input_->width * input_->height);
-          for (size_t i = 0; i < input_->points.size (); i++)
+          for (std::size_t i = 0; i < input_->points.size (); i++)
           {
             input_cloud->points[i].getVector3fMap () = input_->points[i].getVector3fMap ();
             input_cloud->points[i].getNormalVector3fMap () = normals_->points[i].getNormalVector3fMap ();
@@ -254,7 +256,7 @@ namespace pcl
       {
 
         pcl::PointCloud<pcl::Normal>::Ptr normals_;
-        typedef typename pcl::PointCloud<PointInT>::Ptr PointInTPtr;
+        using PointInTPtr = typename pcl::PointCloud<PointInT>::Ptr;
         using KeypointExtractor<PointInT>::input_;
         using KeypointExtractor<PointInT>::radius_;
         typename pcl::HarrisKeypoint3D<PointInT, pcl::PointXYZI>::ResponseMethod m_;
@@ -328,7 +330,7 @@ namespace pcl
       {
 
         pcl::PointCloud<pcl::Normal>::Ptr normals_;
-        typedef typename pcl::PointCloud<PointInT>::Ptr PointInTPtr;
+        using PointInTPtr = typename pcl::PointCloud<PointInT>::Ptr;
         using KeypointExtractor<PointInT>::input_;
         using KeypointExtractor<PointInT>::radius_;
 
@@ -377,28 +379,24 @@ namespace pcl
       class LocalEstimator
       {
       protected:
-        typedef typename pcl::PointCloud<PointInT>::Ptr PointInTPtr;
-        typedef typename pcl::PointCloud<FeatureT>::Ptr FeatureTPtr;
+        using PointInTPtr = typename pcl::PointCloud<PointInT>::Ptr;
+        using FeatureTPtr = typename pcl::PointCloud<FeatureT>::Ptr;
 
-        typename boost::shared_ptr<PreProcessorAndNormalEstimator<PointInT, pcl::Normal> > normal_estimator_;
-        //typename boost::shared_ptr<UniformSampling<PointInT> > keypoint_extractor_;
-        std::vector<typename boost::shared_ptr<KeypointExtractor<PointInT> > > keypoint_extractor_; //this should be a vector
+        std::shared_ptr<PreProcessorAndNormalEstimator<PointInT, pcl::Normal>> normal_estimator_;
+        std::vector<std::shared_ptr<KeypointExtractor<PointInT>>> keypoint_extractor_; //this should be a vector
         float support_radius_;
         //bool filter_planar_;
 
         bool adaptative_MLS_;
 
-        boost::shared_ptr<std::vector<std::vector<int> > > neighborhood_indices_;
-        boost::shared_ptr<std::vector<std::vector<float> > > neighborhood_dist_;
-
-        //std::vector< std::vector<int> > neighborhood_indices_;
-        //std::vector< std::vector<float> > neighborhood_dist_;
+        std::shared_ptr<std::vector<std::vector<int>>> neighborhood_indices_;
+        std::shared_ptr<std::vector<std::vector<float>>> neighborhood_dist_;
 
         void
         computeKeypoints (PointInTPtr & cloud, PointInTPtr & keypoints, pcl::PointCloud<pcl::Normal>::Ptr & normals)
         {
           keypoints.reset (new pcl::PointCloud<PointInT>);
-          for (size_t i = 0; i < keypoint_extractor_.size (); i++)
+          for (std::size_t i = 0; i < keypoint_extractor_.size (); i++)
           {
             keypoint_extractor_[i]->setInputCloud (cloud);
             if (keypoint_extractor_[i]->needNormals ())
@@ -433,7 +431,7 @@ namespace pcl
         estimate (PointInTPtr & in, PointInTPtr & processed, PointInTPtr & keypoints, FeatureTPtr & signatures)=0;
 
         void
-        setNormalEstimator (boost::shared_ptr<PreProcessorAndNormalEstimator<PointInT, pcl::Normal> > & ne)
+        setNormalEstimator (std::shared_ptr<PreProcessorAndNormalEstimator<PointInT, pcl::Normal>> & ne)
         {
           normal_estimator_ = ne;
         }
@@ -442,13 +440,13 @@ namespace pcl
          * \brief Right now only uniformSampling keypoint extractor is allowed
          */
         void
-        addKeypointExtractor (boost::shared_ptr<KeypointExtractor<PointInT> > & ke)
+        addKeypointExtractor (std::shared_ptr<KeypointExtractor<PointInT>>& ke)
         {
           keypoint_extractor_.push_back (ke);
         }
 
         void
-        setKeypointExtractors (std::vector<typename boost::shared_ptr<KeypointExtractor<PointInT> > > & ke)
+        setKeypointExtractors (std::vector<std::shared_ptr<KeypointExtractor<PointInT>>>& ke)
         {
           keypoint_extractor_ = ke;
         }

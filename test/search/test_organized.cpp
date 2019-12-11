@@ -84,7 +84,7 @@ TEST (PCL, Organized_Neighbor_Pointcloud_Nearest_K_Neighbour_Search)
   // instantiate point cloud
   PointCloud<PointXYZ>::Ptr cloudIn (new PointCloud<PointXYZ> ());
 
-  srand (int (time (NULL)));
+  srand (int (time (nullptr)));
 
   // create organized search
   search::OrganizedNeighbor<PointXYZ> organizedNeighborSearch;
@@ -140,7 +140,7 @@ TEST (PCL, Organized_Neighbor_Pointcloud_Nearest_K_Neighbour_Search)
 
 
     // push all points and their distance to the search point into a priority queue - bruteforce approach.
-    for (size_t i = 0; i < cloudIn->points.size (); i++)
+    for (std::size_t i = 0; i < cloudIn->points.size (); i++)
     {
       double pointDist = ((cloudIn->points[i].x - searchPoint.x) * (cloudIn->points[i].x - searchPoint.x) +
                           (cloudIn->points[i].y - searchPoint.y) * (cloudIn->points[i].y - searchPoint.y) +
@@ -156,7 +156,7 @@ TEST (PCL, Organized_Neighbor_Pointcloud_Nearest_K_Neighbour_Search)
       pointCandidates.pop ();
 
     // copy results into vectors
-    while (pointCandidates.size ())
+    while (!pointCandidates.empty ())
     {
       k_indices_bruteforce.push_back (pointCandidates.top ().pointIdx_);
       k_sqr_distances_bruteforce.push_back (float (pointCandidates.top ().pointDistance_));
@@ -168,7 +168,7 @@ TEST (PCL, Organized_Neighbor_Pointcloud_Nearest_K_Neighbour_Search)
     ASSERT_EQ ( k_indices.size() , k_indices_bruteforce.size() );
 
     // compare nearest neighbor results of organized search  with bruteforce search
-    for (size_t i = 0; i < k_indices.size (); i++)
+    for (std::size_t i = 0; i < k_indices.size (); i++)
     {
       ASSERT_EQ ( k_indices[i] , k_indices_bruteforce.back() );
       EXPECT_NEAR (k_sqr_distances[i], k_sqr_distances_bruteforce.back(), 1e-4);
@@ -185,7 +185,7 @@ TEST (PCL, Organized_Neighbor_Pointcloud_Neighbours_Within_Radius_Search)
 {
   constexpr unsigned int test_runs = 10;
 
-  srand (int (time (NULL)));
+  srand (int (time (nullptr)));
 
   search::OrganizedNeighbor<PointXYZ> organizedNeighborSearch;
 
@@ -230,10 +230,10 @@ TEST (PCL, Organized_Neighbor_Pointcloud_Neighbours_Within_Radius_Search)
     double searchRadius = 1.0 * (double (rand ()) / double (RAND_MAX));
 
     // bruteforce radius search
-    vector<int> cloudSearchBruteforce;
+    std::vector<int> cloudSearchBruteforce;
     cloudSearchBruteforce.clear();
 
-    for (size_t i = 0; i < cloudIn->points.size (); i++)
+    for (std::size_t i = 0; i < cloudIn->points.size (); i++)
     {
       pointDist = sqrt (
                         (cloudIn->points[i].x - searchPoint.x) * (cloudIn->points[i].x - searchPoint.x)
@@ -286,8 +286,8 @@ TEST (PCL, Organized_Neighbor_Pointcloud_Neighbours_Within_Radius_Search)
       ++current;
     }
 
-    for (size_t i = 0; i < cloudSearchBruteforce.size (); i++) 
-      for (size_t j = 0; j < cloudNWRSearch.size (); j++) 
+    for (std::size_t i = 0; i < cloudSearchBruteforce.size (); i++) 
+      for (std::size_t j = 0; j < cloudNWRSearch.size (); j++) 
         if (cloudNWRSearch[i]== cloudSearchBruteforce[j])
           break;
 

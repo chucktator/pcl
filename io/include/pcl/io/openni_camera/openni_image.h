@@ -58,15 +58,15 @@ namespace openni_wrapper
   class PCL_EXPORTS Image
   {
   public:
-    typedef boost::shared_ptr<Image> Ptr;
-    typedef boost::shared_ptr<const Image> ConstPtr;
+    using Ptr = boost::shared_ptr<Image>;
+    using ConstPtr = boost::shared_ptr<const Image>;
 
-    typedef enum
+    enum Encoding
     {
       BAYER_GRBG,
       YUV422,
       RGB
-    } Encoding;
+    };
 
     /**
      * @author Suat Gedikli
@@ -169,7 +169,7 @@ namespace openni_wrapper
   } ;
 
   Image::Image (boost::shared_ptr<xn::ImageMetaData> image_meta_data) throw ()
-  : image_md_ (image_meta_data)
+  : image_md_ (std::move(image_meta_data))
   {
   }
 

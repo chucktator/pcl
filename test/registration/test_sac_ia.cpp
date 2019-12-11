@@ -59,7 +59,7 @@ TEST (PCL, SampleConsensusInitialAlignment)
   // Transform the source cloud by a large amount
   Eigen::Vector3f initial_offset (100, 0, 0);
   float angle = static_cast<float> (M_PI) / 2.0f;
-  Eigen::Quaternionf initial_rotation (cos (angle / 2), 0, 0, sin (angle / 2));
+  Eigen::Quaternionf initial_rotation (std::cos (angle / 2), 0, 0, sin (angle / 2));
   PointCloud<PointXYZ> cloud_source_transformed;
   transformPointCloud (cloud_source, cloud_source_transformed, initial_offset, initial_rotation);
 
@@ -112,7 +112,7 @@ TEST (PCL, SampleConsensusInitialAlignment)
   EXPECT_LT (reg.getFitnessScore (), 0.0005);
 
   // Check again, for all possible caching schemes
-  typedef pcl::PointXYZ PointT;
+  using PointT = pcl::PointXYZ;
   for (int iter = 0; iter < 4; iter++)
   {
     bool force_cache = (bool) iter/2;
@@ -149,7 +149,7 @@ TEST (PCL, SampleConsensusPrerejective)
   // Transform the source cloud by a large amount
   Eigen::Vector3f initial_offset (100, 0, 0);
   float angle = static_cast<float> (M_PI) / 2.0f;
-  Eigen::Quaternionf initial_rotation (cos (angle / 2), 0, 0, sin (angle / 2));
+  Eigen::Quaternionf initial_rotation (std::cos (angle / 2), 0, 0, sin (angle / 2));
   PointCloud<PointXYZ> cloud_source_transformed;
   transformPointCloud (cloud_source, cloud_source_transformed, initial_offset, initial_rotation);
 
@@ -209,7 +209,7 @@ TEST (PCL, SampleConsensusPrerejective)
   EXPECT_GT (inlier_fraction, 0.95f);
 
   // Check again, for all possible caching schemes
-  typedef pcl::PointXYZ PointT;
+  using PointT = pcl::PointXYZ;
   for (int iter = 0; iter < 4; iter++)
   {
     bool force_cache = (bool) iter/2;

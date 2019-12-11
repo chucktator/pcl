@@ -63,6 +63,7 @@ set(incs
   "include/pcl/${SUBSYS_NAME}/transformation_estimation_point_to_plane_weighted.h"
   "include/pcl/${SUBSYS_NAME}/transformation_estimation_point_to_plane_lls.h"
   "include/pcl/${SUBSYS_NAME}/transformation_estimation_point_to_plane_lls_weighted.h"
+  "include/pcl/${SUBSYS_NAME}/transformation_estimation_symmetric_point_to_plane_lls.h"
   "include/pcl/${SUBSYS_NAME}/transformation_validation.h"
   "include/pcl/${SUBSYS_NAME}/transformation_validation_euclidean.h"
   "include/pcl/${SUBSYS_NAME}/gicp.h"
@@ -119,6 +120,7 @@ set(impl_incs
   "include/pcl/${SUBSYS_NAME}/impl/transformation_estimation_point_to_plane_lls.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/transformation_estimation_point_to_plane_lls_weighted.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/transformation_estimation_point_to_plane_weighted.hpp"
+  "include/pcl/${SUBSYS_NAME}/impl/transformation_estimation_symmetric_point_to_plane_lls.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/transformation_validation_euclidean.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/gicp.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/sample_consensus_prerejective.hpp"
@@ -172,7 +174,7 @@ set(srcs
 
 set(LIB_NAME "pcl_${SUBSYS_NAME}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
-PCL_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${incs} ${impl_incs})
+PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs})
 target_link_libraries("${LIB_NAME}" pcl_kdtree pcl_search pcl_sample_consensus pcl_features pcl_filters)
 PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_DEPS ${SUBSYS_DEPS})
 # Install include files

@@ -55,13 +55,13 @@ namespace pcl
       template<typename T, typename U, typename V>
       friend class OctreePointCloudAdjacency;
     public:
-      typedef std::list<OctreePointCloudAdjacencyContainer*> NeighborListT;
-      typedef typename NeighborListT::const_iterator const_iterator;
+      using NeighborListT = std::list<OctreePointCloudAdjacencyContainer<PointInT, DataT> *>;
+      using const_iterator = typename NeighborListT::const_iterator;
       //const iterators to neighbors
       inline const_iterator cbegin () const { return (neighbors_.begin ()); }
       inline const_iterator cend () const  { return (neighbors_.end ()); }
       //size of neighbors
-      inline size_t size () const { return neighbors_.size (); }
+      inline std::size_t size () const { return neighbors_.size (); }
       
       /** \brief Class initialization. */
       OctreePointCloudAdjacencyContainer () :
@@ -78,7 +78,7 @@ namespace pcl
       /** \brief Returns the number of neighbors this leaf has
        *  \returns number of neighbors
        */
-      size_t
+      std::size_t
       getNumNeighbors () const
       {
         return neighbors_.size ();
@@ -101,14 +101,14 @@ namespace pcl
       /** \brief  virtual method to get size of container 
        * \return number of points added to leaf node container.
        */
-      size_t
+      std::size_t
       getSize () const override
       {
         return num_points_;
       }
     protected:
       //iterators to neighbors
-      typedef typename NeighborListT::iterator iterator;
+      using iterator = typename NeighborListT::iterator;
       inline iterator begin () { return (neighbors_.begin ()); }
       inline iterator end ()   { return (neighbors_.end ()); }
 

@@ -1,6 +1,7 @@
 // C++
 #include <iostream>
 #include <string>
+#include <cinttypes>
 
 // PCL
 #include <pcl/outofcore/visualization/camera.h>
@@ -167,12 +168,12 @@ Viewport::viewportHudUpdate ()
   Scene *scene = Scene::instance ();
   std::vector<Object*> objects = scene->getObjects ();
 
-  uint64_t points_loaded = 0;
-  uint64_t data_loaded = 0;
+  std::uint64_t points_loaded = 0;
+  std::uint64_t data_loaded = 0;
   for (const auto &object : objects)
   {
     const auto cloud = dynamic_cast<const OutofcoreCloud*> (object);
-    if (cloud != NULL)
+    if (cloud != nullptr)
     {
       points_loaded += cloud->getPointsLoaded ();
       data_loaded += cloud->getDataLoaded ();
@@ -180,7 +181,8 @@ Viewport::viewportHudUpdate ()
   }
 
   char points_loaded_str[50];
-  sprintf (points_loaded_str, "%lu points/%lu mb", points_loaded, data_loaded/1024);
+  snprintf (points_loaded_str, sizeof(points_loaded_str),
+            "%" PRIu64 " points/%" PRIu64 " mb", points_loaded, data_loaded/1024);
   points_hud_actor_->SetInput (points_loaded_str);
 }
 

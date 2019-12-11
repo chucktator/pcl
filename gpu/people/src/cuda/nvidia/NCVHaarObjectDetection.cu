@@ -230,8 +230,6 @@ __device__ Ncv32u d_outMaskPosition;
 
 __device__ void compactBlockWriteOutAnchorParallel(Ncv32u threadPassFlag, Ncv32u threadElem, Ncv32u *vectorOut)
 {
-#if __CUDA_ARCH__ >= 110
-    
     __shared__ Ncv32u shmem[NUM_THREADS_ANCHORSPARALLEL * 2];
     __shared__ Ncv32u numPassed;
     __shared__ Ncv32u outMaskOffset;
@@ -257,7 +255,6 @@ __device__ void compactBlockWriteOutAnchorParallel(Ncv32u threadPassFlag, Ncv32u
     {
         vectorOut[outMaskOffset + threadIdx.x] = shmem[threadIdx.x];
     }
-#endif
 }
 
 
@@ -586,13 +583,11 @@ __global__ void applyHaarClassifierClassifierParallel(Ncv32u *d_IImg, Ncv32u IIm
     }
     else
     {
-#if __CUDA_ARCH__ >= 110
         if (bPass && !threadIdx.x)
         {
             Ncv32u outMaskOffset = atomicAdd(&d_outMaskPosition, 1);
             d_outMask[outMaskOffset] = outMaskVal;
         }
-#endif
     }
 }
 
@@ -1065,7 +1060,7 @@ NCVStatus ncvApplyHaarClassifierCascade_device(NCVMatrix<Ncv32u> &d_integralImag
         cudaChannelFormatDesc cfdTexIImage;
         cfdTexIImage = cudaCreateChannelDesc<Ncv32u>();
 
-        size_t alignmentOffset;
+        std::size_t alignmentOffset;
         ncvAssertCUDAReturn(cudaBindTexture(&alignmentOffset, texIImage, d_integralImage.ptr(), cfdTexIImage,
             (anchorsRoi.height + haar.ClassifierSize.height) * d_integralImage.pitch()), NCV_CUDA_ERROR);
         ncvAssertReturn(alignmentOffset==0, NCV_TEXTURE_BIND_ERROR);
@@ -1078,7 +1073,7 @@ NCVStatus ncvApplyHaarClassifierCascade_device(NCVMatrix<Ncv32u> &d_integralImag
         cfdTexHaarFeatures = cudaCreateChannelDesc<uint2>();
         cfdTexHaarClassifierNodes = cudaCreateChannelDesc<uint4>();
 
-        size_t alignmentOffset;
+        std::size_t alignmentOffset;
         ncvAssertCUDAReturn(cudaBindTexture(&alignmentOffset, texHaarFeatures,
             d_HaarFeatures.ptr(), cfdTexHaarFeatures,sizeof(HaarFeature64) * haar.NumFeatures), NCV_CUDA_ERROR);
         ncvAssertReturn(alignmentOffset==0, NCV_TEXTURE_BIND_ERROR);

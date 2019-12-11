@@ -68,11 +68,11 @@ namespace pcl
         Q_OBJECT
 
       public:
-        ProjectModel (QObject *parent = 0);
+        ProjectModel (QObject *parent = nullptr);
         ProjectModel (const ProjectModel& to_copy);
         ~ProjectModel ();
         
-        ProjectModel (QString project_name, QObject *parent = 0);
+        ProjectModel (QString project_name, QObject *parent = nullptr);
         
         inline const QString
         getName () { return horizontalHeaderItem (0)->text (); }
@@ -82,7 +82,7 @@ namespace pcl
         
         /** \brief Sets the name of the project using the horizontalHeaderItem         */
         void 
-        setName (QString new_name);     
+        setName (const QString& new_name);
         
         /** \brief Returns the selection model which is used for this project */
         inline QItemSelectionModel*
@@ -107,11 +107,11 @@ namespace pcl
         
         /** \brief This sets the selection for points which have been selected in the QVTKWindow */
         void 
-        setPointSelection (boost::shared_ptr<SelectionEvent> selected_event);
+        setPointSelection (const std::shared_ptr<SelectionEvent>& selected_event);
         
         /** \brief This is invoked to perform the manipulations specified on the model */
         void
-        manipulateClouds (boost::shared_ptr<ManipulationEvent> manip_event);
+        manipulateClouds (const std::shared_ptr<ManipulationEvent>& manip_event);
       public Q_SLOTS:
         void 
         commandCompleted (CloudCommand* command);
@@ -156,7 +156,7 @@ namespace pcl
         
         /** \brief Selects all items in the model */
         void 
-        selectAllItems (QStandardItem* item = 0 );
+        selectAllItems (QStandardItem* item = nullptr );
       Q_SIGNALS:
         void
         enqueueNewAction (AbstractTool* tool, ConstItemList data);
@@ -200,7 +200,7 @@ namespace pcl
         setSelectedStyle (interactor_styles::INTERACTOR_STYLES style);
         
         /** \brief Internal pointer storing the last selection event arriving from vtk */
-        boost::shared_ptr<SelectionEvent> selection_event_;
+        std::shared_ptr<SelectionEvent> selection_event_;
         /** \brief Map which stores which cloud items and indices were selected in the selection_event_ */
         QMap <CloudItem*, pcl::PointIndices::Ptr > selected_item_index_map_;
     };

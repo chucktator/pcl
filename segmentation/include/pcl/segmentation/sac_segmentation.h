@@ -70,13 +70,13 @@ namespace pcl
       using PCLBase<PointT>::input_;
       using PCLBase<PointT>::indices_;
 
-      typedef pcl::PointCloud<PointT> PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
-      typedef typename pcl::search::Search<PointT>::Ptr SearchPtr;
+      using PointCloud = pcl::PointCloud<PointT>;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
+      using SearchPtr = typename pcl::search::Search<PointT>::Ptr;
 
-      typedef typename SampleConsensus<PointT>::Ptr SampleConsensusPtr;
-      typedef typename SampleConsensusModel<PointT>::Ptr SampleConsensusModelPtr;
+      using SampleConsensusPtr = typename SampleConsensus<PointT>::Ptr;
+      using SampleConsensusModelPtr = typename SampleConsensusModel<PointT>::Ptr;
 
       /** \brief Empty constructor. 
         * \param[in] random if true set the random seed to the current time, else set to 12345 (default: false)
@@ -321,17 +321,17 @@ namespace pcl
       using PCLBase<PointT>::input_;
       using PCLBase<PointT>::indices_;
 
-      typedef typename SACSegmentation<PointT>::PointCloud PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+      using PointCloud = typename SACSegmentation<PointT>::PointCloud;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-      typedef pcl::PointCloud<PointNT> PointCloudN;
-      typedef typename PointCloudN::Ptr PointCloudNPtr;
-      typedef typename PointCloudN::ConstPtr PointCloudNConstPtr;
+      using PointCloudN = pcl::PointCloud<PointNT>;
+      using PointCloudNPtr = typename PointCloudN::Ptr;
+      using PointCloudNConstPtr = typename PointCloudN::ConstPtr;
 
-      typedef typename SampleConsensus<PointT>::Ptr SampleConsensusPtr;
-      typedef typename SampleConsensusModel<PointT>::Ptr SampleConsensusModelPtr;
-      typedef typename SampleConsensusModelFromNormals<PointT, PointNT>::Ptr SampleConsensusModelFromNormalsPtr;
+      using SampleConsensusPtr = typename SampleConsensus<PointT>::Ptr;
+      using SampleConsensusModelPtr = typename SampleConsensusModel<PointT>::Ptr;
+      using SampleConsensusModelFromNormalsPtr = typename SampleConsensusModelFromNormals<PointT, PointNT>::Ptr;
 
       /** \brief Empty constructor.
         * \param[in] random if true set the random seed to the current time, else set to 12345 (default: false)
@@ -341,8 +341,8 @@ namespace pcl
         , normals_ ()
         , distance_weight_ (0.1)
         , distance_from_origin_ (0)
-        , min_angle_ ()
-        , max_angle_ ()
+        , min_angle_ (0.0)
+        , max_angle_ (M_PI_2)
       {};
 
       /** \brief Provide a pointer to the input dataset that contains the point normals of 

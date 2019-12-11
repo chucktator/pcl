@@ -119,7 +119,7 @@ namespace pcl
     std::vector<int> nn_indices;
     std::vector<float> nn_distances;
     // Process all points in the indices vector
-    for (size_t i = 0; i < cloud.points.size (); ++i)
+    for (std::size_t i = 0; i < cloud.points.size (); ++i)
     {
       if (processed[i])
         continue;
@@ -139,7 +139,7 @@ namespace pcl
           continue;
         }
 
-        for (size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
+        for (std::size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
         {
           if (processed[nn_indices[j]])                         // Has this point been processed before ?
             continue;
@@ -149,7 +149,7 @@ namespace pcl
           double dot_p = normals.points[i].normal[0] * normals.points[nn_indices[j]].normal[0] +
                          normals.points[i].normal[1] * normals.points[nn_indices[j]].normal[1] +
                          normals.points[i].normal[2] * normals.points[nn_indices[j]].normal[2];
-          if ( fabs (acos (dot_p)) < eps_angle )
+          if ( std::abs (std::acos (dot_p)) < eps_angle )
           {
             processed[nn_indices[j]] = true;
             seed_queue.push_back (nn_indices[j]);
@@ -164,7 +164,7 @@ namespace pcl
       {
         pcl::PointIndices r;
         r.indices.resize (seed_queue.size ());
-        for (size_t j = 0; j < seed_queue.size (); ++j)
+        for (std::size_t j = 0; j < seed_queue.size (); ++j)
           r.indices[j] = seed_queue[j];
 
         // These two lines should not be needed: (can anyone confirm?) -FF
@@ -224,7 +224,7 @@ namespace pcl
     std::vector<int> nn_indices;
     std::vector<float> nn_distances;
     // Process all points in the indices vector
-    for (size_t i = 0; i < indices.size (); ++i)
+    for (std::size_t i = 0; i < indices.size (); ++i)
     {
       if (processed[indices[i]])
         continue;
@@ -244,7 +244,7 @@ namespace pcl
           continue;
         }
 
-        for (size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
+        for (std::size_t j = 1; j < nn_indices.size (); ++j)             // nn_indices[0] should be sq_idx
         {
           if (processed[nn_indices[j]])                             // Has this point been processed before ?
             continue;
@@ -255,7 +255,7 @@ namespace pcl
             normals.points[indices[i]].normal[0] * normals.points[indices[nn_indices[j]]].normal[0] +
             normals.points[indices[i]].normal[1] * normals.points[indices[nn_indices[j]]].normal[1] +
             normals.points[indices[i]].normal[2] * normals.points[indices[nn_indices[j]]].normal[2];
-          if ( fabs (acos (dot_p)) < eps_angle )
+          if ( std::abs (std::acos (dot_p)) < eps_angle )
           {
             processed[nn_indices[j]] = true;
             seed_queue.push_back (nn_indices[j]);
@@ -270,7 +270,7 @@ namespace pcl
       {
         pcl::PointIndices r;
         r.indices.resize (seed_queue.size ());
-        for (size_t j = 0; j < seed_queue.size (); ++j)
+        for (std::size_t j = 0; j < seed_queue.size (); ++j)
           r.indices[j] = seed_queue[j];
 
         // These two lines should not be needed: (can anyone confirm?) -FF
@@ -293,18 +293,18 @@ namespace pcl
   template <typename PointT>
   class EuclideanClusterExtraction: public PCLBase<PointT>
   {
-    typedef PCLBase<PointT> BasePCLBase;
+    using BasePCLBase = PCLBase<PointT>;
 
     public:
-      typedef pcl::PointCloud<PointT> PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+      using PointCloud = pcl::PointCloud<PointT>;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-      typedef pcl::search::Search<PointT> KdTree;
-      typedef typename KdTree::Ptr KdTreePtr;
+      using KdTree = pcl::search::Search<PointT>;
+      using KdTreePtr = typename KdTree::Ptr;
 
-      typedef PointIndices::Ptr PointIndicesPtr;
-      typedef PointIndices::ConstPtr PointIndicesConstPtr;
+      using PointIndicesPtr = PointIndices::Ptr;
+      using PointIndicesConstPtr = PointIndices::ConstPtr;
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       /** \brief Empty constructor. */

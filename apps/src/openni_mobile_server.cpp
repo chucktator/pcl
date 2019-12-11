@@ -32,9 +32,6 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
-#include <thread>
-
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/openni_grabber.h>
@@ -46,20 +43,24 @@
 
 #include <boost/asio.hpp>
 
+#include <mutex>
+#include <thread>
+
+
 using boost::asio::ip::tcp;
 using namespace std::chrono_literals;
 
 struct PointCloudBuffers
 {
-  typedef boost::shared_ptr<PointCloudBuffers> Ptr;
+  using Ptr = std::shared_ptr<PointCloudBuffers>;
   std::vector<short> points;
   std::vector<unsigned char> rgb;
 };
 
 void
-CopyPointCloudToBuffers (pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr cloud, PointCloudBuffers& cloud_buffers)
+CopyPointCloudToBuffers (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr& cloud, PointCloudBuffers& cloud_buffers)
 {
-  const size_t nr_points = cloud->points.size ();
+  const std::size_t nr_points = cloud->points.size ();
 
   cloud_buffers.points.resize (nr_points*3);
   cloud_buffers.rgb.resize (nr_points*3);
@@ -67,8 +68,8 @@ CopyPointCloudToBuffers (pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr cloud, Poi
   const pcl::PointXYZ  bounds_min (-0.9f, -0.8f, 1.0f);
   const pcl::PointXYZ  bounds_max (0.9f, 3.0f, 3.3f);
 
-  size_t j = 0;
-  for (size_t i = 0; i < nr_points; ++i)
+  std::size_t j = 0;
+  for (std::size_t i = 0; i < nr_points; ++i)
   {
 
     const pcl::PointXYZRGBA& point = cloud->points[i];
@@ -109,9 +110,9 @@ class PCLMobileServer
 {
   public:
 
-    typedef pcl::PointCloud<PointType> Cloud;
-    typedef typename Cloud::Ptr CloudPtr;
-    typedef typename Cloud::ConstPtr CloudConstPtr;
+    using Cloud = pcl::PointCloud<PointType>;
+    using CloudPtr = typename Cloud::Ptr;
+    using CloudConstPtr = typename Cloud::ConstPtr;
 
     PCLMobileServer (const std::string& device_id = "", int port = 11111,
                      float leaf_size_x = 0.01, float leaf_size_y = 0.01, float leaf_size_z = 0.01)
@@ -132,7 +133,7 @@ class PCLMobileServer
       PointCloudBuffers::Ptr new_buffers = PointCloudBuffers::Ptr (new PointCloudBuffers);
       CopyPointCloudToBuffers (temp_cloud, *new_buffers);
 
-      boost::mutex::scoped_lock lock (mutex_);
+      std::lock_guard<std::mutex> lock (mutex_);
       filtered_cloud_ = temp_cloud;
       buffers_ = new_buffers;
     }
@@ -140,14 +141,14 @@ class PCLMobileServer
     PointCloudBuffers::Ptr
     getLatestBuffers ()
     {
-      boost::mutex::scoped_lock lock (mutex_);
+      std::lock_guard<std::mutex> lock (mutex_);
       return (buffers_);
     }
 
     CloudPtr
     getLatestPointCloud ()
     {
-      boost::mutex::scoped_lock lock (mutex_);
+      std::lock_guard<std::mutex> lock (mutex_);
       return (filtered_cloud_);
     }
 
@@ -155,7 +156,7 @@ class PCLMobileServer
     run ()
     {
       pcl::OpenNIGrabber grabber (device_id_);
-      boost::function<void (const CloudConstPtr&)> handler_function = boost::bind (&PCLMobileServer::handleIncomingCloud, this, _1);
+      std::function<void (const CloudConstPtr&)> handler_function = [this] (const CloudConstPtr& cloud) { handleIncomingCloud (cloud); };
       grabber.registerCallback (handler_function);
       grabber.start ();
 
@@ -217,7 +218,7 @@ class PCLMobileServer
 
     int port_;
     std::string device_id_;
-    boost::mutex mutex_;
+    std::mutex mutex_;
 
     pcl::VoxelGrid<PointType> voxel_grid_filter_;
     pcl::visualization::CloudViewer viewer_;

@@ -36,15 +36,16 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/openni_grabber.h>
-#include <boost/thread/condition.hpp>
 #include <boost/circular_buffer.hpp>
-#include <csignal>
-#include <limits>
-#include <thread>
 #include <pcl/io/pcd_io.h>
 #include <pcl/console/print.h>
 #include <pcl/console/parse.h>
 #include <pcl/common/time.h> //fps calculations
+
+#include <csignal>
+#include <limits>
+#include <memory>
+#include <thread>
 
 using namespace std;
 using namespace std::chrono_literals;
@@ -52,7 +53,7 @@ using namespace pcl;
 using namespace pcl::console;
 
 bool is_done = false;
-boost::mutex io_mutex;
+std::mutex io_mutex;
 
 #if defined(__linux__) || defined (TARGET_OS_MAC)
 #include <unistd.h>
@@ -61,18 +62,18 @@ boost::mutex io_mutex;
 size_t 
 getTotalSystemMemory ()
 {
-  uint64_t memory = std::numeric_limits<size_t>::max ();
+  std::uint64_t memory = std::numeric_limits<std::size_t>::max ();
 
 #ifdef _SC_AVPHYS_PAGES
-  uint64_t pages = sysconf (_SC_AVPHYS_PAGES);
-  uint64_t page_size = sysconf (_SC_PAGE_SIZE);
+  std::uint64_t pages = sysconf (_SC_AVPHYS_PAGES);
+  std::uint64_t page_size = sysconf (_SC_PAGE_SIZE);
   
   memory = pages * page_size;
   
 #elif defined(HAVE_SYSCTL) && defined(HW_PHYSMEM)
   // This works on *bsd and darwin.
   unsigned int physmem;
-  size_t len = sizeof physmem;
+  std::size_t len = sizeof physmem;
   static int mib[2] = { CTL_HW, HW_PHYSMEM };
 
   if (sysctl (mib, ARRAY_SIZE (mib), &physmem, &len, NULL, 0) == 0 && len == sizeof (physmem))
@@ -81,19 +82,19 @@ getTotalSystemMemory ()
   }
 #endif
 
-  if (memory > uint64_t (std::numeric_limits<size_t>::max ()))
+  if (memory > std::uint64_t (std::numeric_limits<std::size_t>::max ()))
   {
-    memory = std::numeric_limits<size_t>::max ();
+    memory = std::numeric_limits<std::size_t>::max ();
   }
   
   print_info ("Total available memory size: %lluMB.\n", memory / 1048576ull);
-  return size_t (memory);
+  return std::size_t (memory);
 }
 
-const size_t BUFFER_SIZE = size_t (getTotalSystemMemory () / (640 * 480 * sizeof (pcl::PointXYZRGBA)));
+const std::size_t BUFFER_SIZE = std::size_t (getTotalSystemMemory () / (640 * 480 * sizeof (pcl::PointXYZRGBA)));
 #else
 
-const size_t BUFFER_SIZE = 200;
+const std::size_t BUFFER_SIZE = 200;
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -112,21 +113,21 @@ class PCDBuffer
     inline bool 
     isFull ()
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
       return (buffer_.full ());
     }
 
     inline bool
     isEmpty ()
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
       return (buffer_.empty ());
     }
 
     inline int 
     getSize ()
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
       return (int (buffer_.size ()));
     }
 
@@ -139,7 +140,7 @@ class PCDBuffer
     inline void 
     setCapacity (int buff_size)
     {
-      boost::mutex::scoped_lock buff_lock (bmutex_);
+      std::lock_guard<std::mutex> buff_lock (bmutex_);
       buffer_.set_capacity (buff_size);
     }
 
@@ -147,8 +148,8 @@ class PCDBuffer
     PCDBuffer (const PCDBuffer&) = delete; // Disabled copy constructor
     PCDBuffer& operator = (const PCDBuffer&) = delete; // Disabled assignment operator
 
-    boost::mutex bmutex_;
-    boost::condition_variable buff_empty_;
+    std::mutex bmutex_;
+    std::condition_variable buff_empty_;
     boost::circular_buffer<typename PointCloud<PointT>::ConstPtr> buffer_;
 };
 
@@ -158,7 +159,7 @@ PCDBuffer<PointT>::pushBack (typename PointCloud<PointT>::ConstPtr cloud)
 {
   bool retVal = false;
   {
-    boost::mutex::scoped_lock buff_lock (bmutex_);
+    std::lock_guard<std::mutex> buff_lock (bmutex_);
     if (!buffer_.full ())
       retVal = true;
     buffer_.push_back (cloud);
@@ -173,14 +174,14 @@ PCDBuffer<PointT>::getFront ()
 {
   typename PointCloud<PointT>::ConstPtr cloud;
   {
-    boost::mutex::scoped_lock buff_lock (bmutex_);
+    std::unique_lock<std::mutex> buff_lock (bmutex_);
     while (buffer_.empty ())
     {
       if (is_done)
         break;
       {
-        boost::mutex::scoped_lock io_lock (io_mutex);
-        //cerr << "No data in buffer_ yet or buffer is empty." << endl;
+        std::lock_guard<std::mutex> io_lock (io_mutex);
+        //std::cerr << "No data in buffer_ yet or buffer is empty." << std::endl;
       }
       buff_empty_.wait (buff_lock);
     }
@@ -199,7 +200,7 @@ do \
     ++count; \
     if (now - last >= 1.0) \
     { \
-      cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff.getSize () << "\n"; \
+      std::cerr << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz. Queue size: " << buff.getSize () << "\n"; \
       count = 0; \
       last = now; \
     } \
@@ -218,7 +219,7 @@ class Producer
       if (!buf_.pushBack (cloud))
       {
         {
-          boost::mutex::scoped_lock io_lock (io_mutex);
+          std::lock_guard<std::mutex> io_lock (io_mutex);
           print_warn ("Warning! Buffer was full, overwriting data!\n");
         }
       }
@@ -233,7 +234,10 @@ class Producer
       grabber->getDevice ()->setDepthOutputFormat (depth_mode_);
 
       Grabber* interface = grabber;
-      boost::function<void (const typename PointCloud<PointT>::ConstPtr&)> f = boost::bind (&Producer::grabberCallBack, this, _1);
+      std::function<void (const typename PointCloud<PointT>::ConstPtr&)> f = [this] (const typename PointCloud<PointT>::ConstPtr& cloud)
+      {
+        grabberCallBack (cloud);
+      };
       interface->registerCallback (f);
       interface->start ();
 
@@ -251,7 +255,7 @@ class Producer
       : buf_ (buf),
         depth_mode_ (depth_mode)
     {
-      thread_.reset (new boost::thread (boost::bind (&Producer::grabAndSend, this)));
+      thread_.reset (new std::thread (&Producer::grabAndSend, this));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -259,14 +263,14 @@ class Producer
     stop ()
     {
       thread_->join ();
-      boost::mutex::scoped_lock io_lock (io_mutex);
+      std::lock_guard<std::mutex> io_lock (io_mutex);
       print_highlight ("Producer done.\n");
     }
 
   private:
     PCDBuffer<PointT> &buf_;
     openni_wrapper::OpenNIDevice::DepthMode depth_mode_;
-    boost::shared_ptr<boost::thread> thread_;
+    std::shared_ptr<std::thread> thread_;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -299,7 +303,7 @@ class Consumer
       }
 
       {
-        boost::mutex::scoped_lock io_lock (io_mutex);
+        std::lock_guard<std::mutex> io_lock (io_mutex);
         print_info ("Writing remaining %ld clouds in the buffer to disk...\n", buf_.getSize ());
       }
       while (!buf_.isEmpty ())
@@ -310,7 +314,7 @@ class Consumer
     Consumer (PCDBuffer<PointT> &buf)
       : buf_ (buf)
     {
-      thread_.reset (new boost::thread (boost::bind (&Consumer::receiveAndProcess, this)));
+      thread_.reset (new std::thread (&Consumer::receiveAndProcess, this));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -318,13 +322,13 @@ class Consumer
     stop ()
     {
       thread_->join ();
-      boost::mutex::scoped_lock io_lock (io_mutex);
+      std::lock_guard<std::mutex> io_lock (io_mutex);
       print_highlight ("Consumer done.\n");
     }
 
   private:
     PCDBuffer<PointT> &buf_;
-    boost::shared_ptr<boost::thread> thread_;
+    std::shared_ptr<std::thread> thread_;
     PCDWriter writer_;
 };
 
@@ -332,7 +336,7 @@ class Consumer
 void 
 ctrlC (int)
 {
-  boost::mutex::scoped_lock io_lock (io_mutex);
+  std::lock_guard<std::mutex> io_lock (io_mutex);
   print_info ("\nCtrl-C detected, exit condition set to true.\n");
   is_done = true;
 }
@@ -391,26 +395,26 @@ main (int argc, char** argv)
       printHelp (buff_size, argc, argv);
       return 0;
     }
-    else if (device_id == "-l")
+    if (device_id == "-l")
     {
       if (argc >= 3)
       {
         pcl::OpenNIGrabber grabber (argv[2]);
-        boost::shared_ptr<openni_wrapper::OpenNIDevice> device = grabber.getDevice ();
-        cout << "Supported depth modes for device: " << device->getVendorName () << " , " << device->getProductName () << endl;
+        openni_wrapper::OpenNIDevice::Ptr device = grabber.getDevice ();
+        std::cout << "Supported depth modes for device: " << device->getVendorName () << " , " << device->getProductName () << std::endl;
         std::vector<std::pair<int, XnMapOutputMode > > modes = grabber.getAvailableDepthModes ();
         for (std::vector<std::pair<int, XnMapOutputMode > >::const_iterator it = modes.begin (); it != modes.end (); ++it)
         {
-          cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << endl;
+          std::cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << std::endl;
         }
 
         if (device->hasImageStream ())
         {
-          cout << endl << "Supported image modes for device: " << device->getVendorName () << " , " << device->getProductName () << endl;
+          std::cout << std::endl << "Supported image modes for device: " << device->getVendorName () << " , " << device->getProductName () << std::endl;
           modes = grabber.getAvailableImageModes ();
           for (std::vector<std::pair<int, XnMapOutputMode > >::const_iterator it = modes.begin (); it != modes.end (); ++it)
           {
-            cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << endl;
+            std::cout << it->first << " = " << it->second.nXRes << " x " << it->second.nYRes << " @ " << it->second.nFPS << std::endl;
           }
         }
       }
@@ -421,15 +425,15 @@ main (int argc, char** argv)
         {
           for (unsigned deviceIdx = 0; deviceIdx < driver.getNumberDevices (); ++deviceIdx)
           {
-            cout << "Device: " << deviceIdx + 1 << ", vendor: " << driver.getVendorName (deviceIdx) << ", product: " << driver.getProductName (deviceIdx)
-              << ", connected: " << driver.getBus(deviceIdx) << " @ " << driver.getAddress (deviceIdx) << ", serial number: \'" << driver.getSerialNumber (deviceIdx) << "\'" << endl;
+            std::cout << "Device: " << deviceIdx + 1 << ", vendor: " << driver.getVendorName (deviceIdx) << ", product: " << driver.getProductName (deviceIdx)
+              << ", connected: " << driver.getBus(deviceIdx) << " @ " << driver.getAddress (deviceIdx) << ", serial number: \'" << driver.getSerialNumber (deviceIdx) << "\'" << std::endl;
           }
 
         }
         else
-          cout << "No devices connected." << endl;
+          std::cout << "No devices connected." << std::endl;
 
-        cout <<"Virtual Devices available: ONI player" << endl;
+        std::cout <<"Virtual Devices available: ONI player" << std::endl;
       }
       return 0;
     }
@@ -438,7 +442,7 @@ main (int argc, char** argv)
   {
     openni_wrapper::OpenNIDriver& driver = openni_wrapper::OpenNIDriver::getInstance ();
     if (driver.getNumberDevices () > 0)
-      cout << "Device Id not set, using first device." << endl;
+      std::cout << "Device Id not set, using first device." << std::endl;
   }
 
   bool just_xyz = find_switch (argc, argv, "-xyz");

@@ -39,15 +39,8 @@
 
 #pragma once
 
-#ifdef __GNUC__
-#pragma GCC system_header 
-#endif
+#include <random>
 
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/uniform_int.hpp>
-#include <boost/random/variate_generator.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
 #include <pcl/pcl_macros.h>
 
 namespace pcl 
@@ -55,24 +48,24 @@ namespace pcl
   namespace common 
   {
     /// uniform distribution dummy struct
-    template <typename T> struct uniform_distribution;
+    template <typename T, typename T2=void> struct uniform_distribution;
     /// uniform distribution int specialized
-    template<> 
-    struct uniform_distribution<int> 
+    template <typename T>
+    struct uniform_distribution<T, std::enable_if_t<std::is_integral<T>::value>>
     {
-      typedef boost::uniform_int<int> type;
+      using type = std::uniform_int_distribution<T>;
     };
     /// uniform distribution float specialized
-    template<> 
-    struct uniform_distribution<float> 
+    template <typename T>
+    struct uniform_distribution<T, std::enable_if_t<std::is_floating_point<T>::value>>
     {
-      typedef boost::uniform_real<float> type;
+      using type = std::uniform_real_distribution<T>;
     };
     ///  normal distribution
     template<typename T> 
     struct normal_distribution
     {
-      typedef boost::normal_distribution<T> type;
+      using type = std::normal_distribution<T>;
     };
 
     /** \brief UniformGenerator class generates a random number from range [min, max] at each run picked
@@ -87,7 +80,7 @@ namespace pcl
       public:
         struct Parameters
         {
-            Parameters (T _min = 0, T _max = 1, pcl::uint32_t _seed = 1)
+            Parameters (T _min = 0, T _max = 1, std::uint32_t _seed = 1)
             : min (_min)
             , max (_max)
             , seed (_seed)
@@ -95,7 +88,7 @@ namespace pcl
 
           T min;
           T max;
-          pcl::uint32_t seed;
+          std::uint32_t seed;
         };
 
         /** Constructor
@@ -103,7 +96,7 @@ namespace pcl
           * \param max: included higher bound
           * \param seed: seeding value
           */
-        UniformGenerator(T min = 0, T max = 1, pcl::uint32_t seed = -1);
+        UniformGenerator(T min = 0, T max = 1, std::uint32_t seed = -1);
 
         /** Constructor
           * \param parameters uniform distribution parameters and generator seed
@@ -114,7 +107,7 @@ namespace pcl
           * \param[in] seed new generator seed value
           */
         void 
-        setSeed (pcl::uint32_t seed);
+        setSeed (std::uint32_t seed);
 
         /** Set the uniform number generator parameters
           * \param[in] min minimum allowed value
@@ -122,7 +115,7 @@ namespace pcl
           * \param[in] seed random number generator seed (applied if != -1)
           */
         void 
-        setParameters (T min, T max, pcl::uint32_t seed = -1);
+        setParameters (T min, T max, std::uint32_t seed = -1);
 
         /** Set generator parameters
           * \param parameters uniform distribution parameters and generator seed
@@ -136,19 +129,16 @@ namespace pcl
 
         /// \return a randomly generated number in the interval [min, max]
         inline T 
-        run () { return (generator_ ()); }
+        run () { return (distribution_ (rng_)); }
 
       private:
-        typedef boost::mt19937 EngineType;
-        typedef typename uniform_distribution<T>::type DistributionType;
+        using DistributionType = typename uniform_distribution<T>::type;
         /// parameters
         Parameters parameters_;
+        /// random number generator
+        std::mt19937 rng_;
         /// uniform distribution
         DistributionType distribution_;
-        /// random number generator
-        EngineType rng_;
-        /// generator of random number from a uniform distribution
-        boost::variate_generator<EngineType&, DistributionType> generator_;
     };
 
     /** \brief NormalGenerator class generates a random number from a normal distribution specified
@@ -162,7 +152,7 @@ namespace pcl
       public:
         struct Parameters
         {
-            Parameters (T _mean = 0, T _sigma = 1, pcl::uint32_t _seed = 1)
+            Parameters (T _mean = 0, T _sigma = 1, std::uint32_t _seed = 1)
             : mean (_mean)
             , sigma (_sigma)
             , seed (_seed)
@@ -170,7 +160,7 @@ namespace pcl
 
           T mean;
           T sigma;
-          pcl::uint32_t seed;
+          std::uint32_t seed;
         };
 
         /** Constructor
@@ -178,7 +168,7 @@ namespace pcl
           * \param[in] sigma normal variation
           * \param[in] seed seeding value
           */
-        NormalGenerator(T mean = 0, T sigma = 1, pcl::uint32_t seed = -1);
+        NormalGenerator(T mean = 0, T sigma = 1, std::uint32_t seed = -1);
 
         /** Constructor
           * \param parameters normal distribution parameters and seed
@@ -189,7 +179,7 @@ namespace pcl
           * \param[in] seed new seed value
           */
         void 
-        setSeed (pcl::uint32_t seed);
+        setSeed (std::uint32_t seed);
 
         /** Set the normal number generator parameters
           * \param[in] mean mean of the normal distribution
@@ -197,7 +187,7 @@ namespace pcl
           * \param[in] seed random number generator seed (applied if != -1)
           */
         void 
-        setParameters (T mean, T sigma, pcl::uint32_t seed = -1);
+        setParameters (T mean, T sigma, std::uint32_t seed = -1);
 
         /** Set generator parameters
           * \param parameters normal distribution parameters and seed
@@ -211,18 +201,15 @@ namespace pcl
 
         /// \return a randomly generated number in the normal distribution (mean, sigma)
         inline T 
-        run () { return (generator_ ()); }
+        run () { return (distribution_ (rng_)); }
 
-        typedef boost::mt19937 EngineType;
-        typedef typename normal_distribution<T>::type DistributionType;
+        using DistributionType = typename normal_distribution<T>::type;
         /// parameters
         Parameters parameters_;
+        /// random number generator
+        std::mt19937 rng_;
         /// normal distribution
         DistributionType distribution_;
-        /// random number generator
-        EngineType rng_;
-        /// generator of random number from a normal distribution
-        boost::variate_generator<EngineType&, DistributionType > generator_;
     };
   }
 }

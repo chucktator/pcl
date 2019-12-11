@@ -39,8 +39,6 @@
 
 #include <pcl/recognition/ransac_based/model_library.h>
 #include <pcl/recognition/ransac_based/obj_rec_ransac.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/kdtree/impl/kdtree_flann.hpp>
 #include <pcl/console/print.h>
 #include <cmath>
 
@@ -111,7 +109,7 @@ ModelLibrary::addModel (const PointCloudIn& points, const PointCloudN& normals, 
 #endif
 
   // Try to insert a new model entry
-  pair<map<string,Model*>::iterator, bool> result = models_.insert (pair<string,Model*> (object_name, static_cast<Model*> (NULL)));
+  pair<map<string,Model*>::iterator, bool> result = models_.insert (pair<string,Model*> (object_name, static_cast<Model*> (nullptr)));
 
   // Check if 'object_name' is unique
   if (!result.second)
@@ -125,7 +123,7 @@ ModelLibrary::addModel (const PointCloudIn& points, const PointCloudN& normals, 
   result.first->second = new_model;
 
   const ORROctree& octree = new_model->getOctree ();
-  const vector<ORROctree::Node*> &full_leaves = octree.getFullLeaves ();
+  const std::vector<ORROctree::Node*> &full_leaves = octree.getFullLeaves ();
   list<ORROctree::Node*> inter_leaves;
   int num_of_pairs = 0;
 

@@ -47,7 +47,6 @@
 #include <pcl/common/centroid.h>
 #include <pcl/common/eigen.h>
 #include <pcl/common/geometry.h>
-#include <boost/bind.hpp>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -111,10 +110,10 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::process (PointCloudOut &output)
     // Initialize random number generator if necessary
     case (RANDOM_UNIFORM_DENSITY):
     {
-      rng_alg_.seed (static_cast<unsigned> (std::time (0)));
-      const float tmp = static_cast<float> (search_radius_ / 2.0f);
-      const boost::uniform_real<float> uniform_distrib (-tmp, tmp);
-      rng_uniform_distribution_.reset (new boost::variate_generator<boost::mt19937&, boost::uniform_real<float> > (rng_alg_, uniform_distrib));
+      std::random_device rd;
+      rng_.seed (rd());
+      const double tmp = search_radius_ / 2.0;
+      rng_uniform_distribution_.reset (new std::uniform_real_distribution<> (-tmp, tmp));
 
       break;
     }
@@ -146,11 +145,11 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::process (PointCloudOut &output)
   if (compute_normals_)
   {
     normals_->height = 1;
-    normals_->width = static_cast<uint32_t> (normals_->size ());
+    normals_->width = static_cast<std::uint32_t> (normals_->size ());
 
-    for (size_t i = 0; i < output.size (); ++i)
+    for (std::size_t i = 0; i < output.size (); ++i)
     {
-      typedef typename pcl::traits::fieldList<PointOutT>::type FieldList;
+      using FieldList = typename pcl::traits::fieldList<PointOutT>::type;
       pcl::for_each_type<FieldList> (SetIfFieldExists<PointOutT, float> (output.points[i], "normal_x", normals_->points[i].normal_x));
       pcl::for_each_type<FieldList> (SetIfFieldExists<PointOutT, float> (output.points[i], "normal_y", normals_->points[i].normal_y));
       pcl::for_each_type<FieldList> (SetIfFieldExists<PointOutT, float> (output.points[i], "normal_z", normals_->points[i].normal_z));
@@ -161,7 +160,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::process (PointCloudOut &output)
 
   // Set proper widths and heights for the clouds
   output.height = 1;
-  output.width = static_cast<uint32_t> (output.size ());
+  output.width = static_cast<std::uint32_t> (output.size ());
 
   deinitCompute ();
 }
@@ -205,7 +204,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::computeMLSPointNormal (int index,
     case (RANDOM_UNIFORM_DENSITY):
     {
       // Compute the local point density and add more samples if necessary
-      const int num_points_to_add = static_cast<int> (floor (desired_num_points_in_radius_ / 2.0 / static_cast<double> (nn_indices.size ())));
+      const int num_points_to_add = static_cast<int> (std::floor (desired_num_points_in_radius_ / 2.0 / static_cast<double> (nn_indices.size ())));
 
       // Just add the query point, because the density is good
       if (num_points_to_add <= 0)
@@ -219,8 +218,8 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::computeMLSPointNormal (int index,
         // Sample the local plane
         for (int num_added = 0; num_added < num_points_to_add;)
         {
-          const double u = (*rng_uniform_distribution_) ();
-          const double v = (*rng_uniform_distribution_) ();
+          const double u = (*rng_uniform_distribution_) (rng_);
+          const double v = (*rng_uniform_distribution_) (rng_);
 
           // Check if inside circle; if not, try another coin flip
           if (u * u + v * v > search_radius_ * search_radius_ / 4)
@@ -313,7 +312,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::performProcessing (PointCloudOut &
 #ifdef _OPENMP
         const int tn = omp_get_thread_num ();
         // Size of projected points before computeMLSPointNormal () adds points
-        size_t pp_size = projected_points[tn].size ();
+        std::size_t pp_size = projected_points[tn].size ();
 #else
         PointCloudOut projected_points;
         NormalCloud projected_points_normals;
@@ -322,7 +321,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::performProcessing (PointCloudOut &
         // Get a plane approximating the local surface's tangent and project point onto it
         const int index = (*indices_)[cp];
 
-        size_t mls_result_index = 0;
+        std::size_t mls_result_index = 0;
         if (cache_mls_results_)
           mls_result_index = index; // otherwise we give it a dummy location.
 
@@ -330,7 +329,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::performProcessing (PointCloudOut &
         computeMLSPointNormal (index, nn_indices, projected_points[tn], projected_points_normals[tn], corresponding_input_indices[tn], mls_results_[mls_result_index]);
 
         // Copy all information from the input cloud to the output points (not doing any interpolation)
-        for (size_t pp = pp_size; pp < projected_points[tn].size (); ++pp)
+        for (std::size_t pp = pp_size; pp < projected_points[tn].size (); ++pp)
           copyMissingFields (input_->points[(*indices_)[cp]], projected_points[tn][pp]);
 #else
         computeMLSPointNormal (index, nn_indices, projected_points, projected_points_normals, *corresponding_input_indices_, mls_results_[mls_result_index]);
@@ -368,7 +367,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::performUpsampling (PointCloudOut &
   if (upsample_method_ == DISTINCT_CLOUD)
   {
     corresponding_input_indices_.reset (new PointIndices);
-    for (size_t dp_i = 0; dp_i < distinct_cloud_->size (); ++dp_i) // dp_i = distinct_point_i
+    for (std::size_t dp_i = 0; dp_i < distinct_cloud_->size (); ++dp_i) // dp_i = distinct_point_i
     {
       // Distinct cloud may have nan points, skip them
       if (!std::isfinite (distinct_cloud_->points[dp_i].x))
@@ -719,7 +718,7 @@ pcl::MLSResult::computeMLSSurface (const pcl::PointCloud<PointT> &cloud,
                                    const std::vector<int> &nn_indices,
                                    double search_radius,
                                    int polynomial_order,
-                                   boost::function<double(const double)> weight_func)
+                                   std::function<double(const double)> weight_func)
 {
   // Compute the plane coefficients
   EIGEN_ALIGN16 Eigen::Matrix3d covariance_matrix;
@@ -775,13 +774,8 @@ pcl::MLSResult::computeMLSSurface (const pcl::PointCloud<PointT> &cloud,
 
     if (num_neighbors >= nr_coeff)
     {
-      // Note: The max_sq_radius parameter is only used if weight_func was not defined
-      double max_sq_radius = 1;
-      if (weight_func == 0)
-      {
-        max_sq_radius = search_radius * search_radius;
-        weight_func = boost::bind (&pcl::MLSResult::computeMLSWeight, this, _1, max_sq_radius);
-      }
+      if (!weight_func)
+        weight_func = [=] (const double sq_dist) { return this->computeMLSWeight (sq_dist, search_radius * search_radius); };
 
       // Allocate matrices and vectors to hold the data used for the polynomial fit
       Eigen::VectorXd weight_vec (num_neighbors);
@@ -792,7 +786,7 @@ pcl::MLSResult::computeMLSSurface (const pcl::PointCloud<PointT> &cloud,
       // Update neighborhood, since point was projected, and computing relative
       // positions. Note updating only distances for the weights for speed
       std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > de_meaned (num_neighbors);
-      for (size_t ni = 0; ni < static_cast<size_t>(num_neighbors); ++ni)
+      for (std::size_t ni = 0; ni < static_cast<std::size_t>(num_neighbors); ++ni)
       {
         de_meaned[ni][0] = cloud.points[nn_indices[ni]].x - mean[0];
         de_meaned[ni][1] = cloud.points[nn_indices[ni]].y - mean[1];
@@ -802,7 +796,7 @@ pcl::MLSResult::computeMLSSurface (const pcl::PointCloud<PointT> &cloud,
 
       // Go through neighbors, transform them in the local coordinate system,
       // save height and the evaluation of the polynome's terms
-      for (size_t ni = 0; ni < static_cast<size_t>(num_neighbors); ++ni)
+      for (std::size_t ni = 0; ni < static_cast<std::size_t>(num_neighbors); ++ni)
       {
         // Transforming coordinates
         const double u_coord = de_meaned[ni].dot(u_axis);
@@ -838,21 +832,21 @@ template <typename PointInT, typename PointOutT>
 pcl::MovingLeastSquares<PointInT, PointOutT>::MLSVoxelGrid::MLSVoxelGrid (PointCloudInConstPtr& cloud,
                                                                           IndicesPtr &indices,
                                                                           float voxel_size) :
-  voxel_grid_ (), bounding_min_ (), bounding_max_ (), data_size_ (), voxel_size_ (voxel_size)
+  voxel_grid_ (), data_size_ (), voxel_size_ (voxel_size)
 {
   pcl::getMinMax3D (*cloud, *indices, bounding_min_, bounding_max_);
 
   Eigen::Vector4f bounding_box_size = bounding_max_ - bounding_min_;
   const double max_size = (std::max) ((std::max)(bounding_box_size.x (), bounding_box_size.y ()), bounding_box_size.z ());
   // Put initial cloud in voxel grid
-  data_size_ = static_cast<uint64_t> (1.5 * max_size / voxel_size_);
-  for (size_t i = 0; i < indices->size (); ++i)
+  data_size_ = static_cast<std::uint64_t> (1.5 * max_size / voxel_size_);
+  for (std::size_t i = 0; i < indices->size (); ++i)
     if (std::isfinite (cloud->points[(*indices)[i]].x))
     {
       Eigen::Vector3i pos;
       getCellIndex (cloud->points[(*indices)[i]].getVector3fMap (), pos);
 
-      uint64_t index_1d;
+      std::uint64_t index_1d;
       getIndexIn1D (pos, index_1d);
       Leaf leaf;
       voxel_grid_[index_1d] = leaf;
@@ -878,7 +872,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::MLSVoxelGrid::dilate ()
             Eigen::Vector3i new_index;
             new_index = index + Eigen::Vector3i (x, y, z);
 
-            uint64_t index_1d;
+            std::uint64_t index_1d;
             getIndexIn1D (new_index, index_1d);
             Leaf leaf;
             new_voxel_grid[index_1d] = leaf;

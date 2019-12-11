@@ -52,9 +52,9 @@ using namespace pcl;
 using namespace pcl::io;
 using namespace pcl::console;
 
-typedef PointXYZ PointType;
-typedef PointCloud<PointXYZ> Cloud;
-typedef const Cloud::ConstPtr ConstCloudPtr;
+using PointType = PointXYZ;
+using Cloud = PointCloud<PointXYZ>;
+using ConstCloudPtr = const Cloud::ConstPtr;
 
 int default_max_window_size = 33;
 float default_slope = 0.7f;
@@ -173,9 +173,9 @@ saveCloud (const std::string &filename, const Cloud &output)
 }
 
 int
-batchProcess (const vector<string> &pcd_files, string &output_dir, int max_window_size, float slope, float max_distance, float initial_distance, float cell_size, float base, bool exponential, bool approximate)
+batchProcess (const std::vector<string> &pcd_files, string &output_dir, int max_window_size, float slope, float max_distance, float initial_distance, float cell_size, float base, bool exponential, bool approximate)
 {
-  vector<string> st;
+  std::vector<string> st;
   for (const auto &pcd_file : pcd_files)
   {
     // Load the first file
@@ -300,9 +300,9 @@ main (int argc, char** argv)
   }
   else
   {
-    if (input_dir != "" && boost::filesystem::exists (input_dir))
+    if (!input_dir.empty() && boost::filesystem::exists (input_dir))
     {
-      vector<string> pcd_files;
+      std::vector<string> pcd_files;
       boost::filesystem::directory_iterator end_itr;
       for (boost::filesystem::directory_iterator itr (input_dir); itr != end_itr; ++itr)
       {

@@ -102,7 +102,7 @@ namespace pcl
     float nx = 0.0f;
     float ny = 0.0f;
     float nz = 0.0f;
-    for (size_t i = 0; i < k_indices.size (); ++i) {
+    for (std::size_t i = 0; i < k_indices.size (); ++i) {
       // Neighbor
       const NormalT& pointi = cloud[k_indices[i]];
       
@@ -190,9 +190,9 @@ namespace pcl
     using Filter<NormalT>::filter_name_;
     using Filter<NormalT>::getClassName;
 
-    typedef typename Filter<NormalT>::PointCloud PointCloud;
-    typedef typename PointCloud::Ptr PointCloudPtr;
-    typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+    using PointCloud = typename Filter<NormalT>::PointCloud;
+    using PointCloudPtr = typename PointCloud::Ptr;
+    using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
     public:
       /** \brief Empty constructor, sets default convergence parameters

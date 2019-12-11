@@ -40,6 +40,7 @@
 #pragma once
 
 #include <pcl/common/angles.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/segmentation/comparator.h>
 #include <boost/make_shared.hpp>
 
@@ -54,24 +55,23 @@ namespace pcl
   class GroundPlaneComparator: public Comparator<PointT>
   {
     public:
-      typedef typename Comparator<PointT>::PointCloud PointCloud;
-      typedef typename Comparator<PointT>::PointCloudConstPtr PointCloudConstPtr;
+      using PointCloud = typename Comparator<PointT>::PointCloud;
+      using PointCloudConstPtr = typename Comparator<PointT>::PointCloudConstPtr;
       
-      typedef pcl::PointCloud<PointNT> PointCloudN;
-      typedef typename PointCloudN::Ptr PointCloudNPtr;
-      typedef typename PointCloudN::ConstPtr PointCloudNConstPtr;
+      using PointCloudN = pcl::PointCloud<PointNT>;
+      using PointCloudNPtr = typename PointCloudN::Ptr;
+      using PointCloudNConstPtr = typename PointCloudN::ConstPtr;
       
-      typedef boost::shared_ptr<GroundPlaneComparator<PointT, PointNT> > Ptr;
-      typedef boost::shared_ptr<const GroundPlaneComparator<PointT, PointNT> > ConstPtr;
+      using Ptr = boost::shared_ptr<GroundPlaneComparator<PointT, PointNT> >;
+      using ConstPtr = boost::shared_ptr<const GroundPlaneComparator<PointT, PointNT> >;
 
       using pcl::Comparator<PointT>::input_;
       
       /** \brief Empty constructor for GroundPlaneComparator. */
       GroundPlaneComparator ()
         : normals_ ()
-        , plane_coeff_d_ ()
-        , angular_threshold_ (cosf (pcl::deg2rad (2.0f)))
-        , road_angular_threshold_ ( cosf(pcl::deg2rad (10.0f)))
+        , angular_threshold_ (std::cos (pcl::deg2rad (2.0f)))
+        , road_angular_threshold_ ( std::cos(pcl::deg2rad (10.0f)))
         , distance_threshold_ (0.1f)
         , depth_dependent_ (true)
         , z_axis_ (Eigen::Vector3f (0.0, 0.0, 1.0) )
@@ -85,11 +85,11 @@ namespace pcl
       GroundPlaneComparator (boost::shared_ptr<std::vector<float> >& plane_coeff_d) 
         : normals_ ()
         , plane_coeff_d_ (plane_coeff_d)
-        , angular_threshold_ (cosf (pcl::deg2rad (3.0f)))
+        , angular_threshold_ (std::cos (pcl::deg2rad (3.0f)))
         , distance_threshold_ (0.1f)
         , depth_dependent_ (true)
         , z_axis_ (Eigen::Vector3f (0.0f, 0.0f, 1.0f))
-        , road_angular_threshold_ ( cosf(pcl::deg2rad (40.0f)))
+        , road_angular_threshold_ ( std::cos(pcl::deg2rad (40.0f)))
         , desired_road_axis_ (Eigen::Vector3f(0.0, -1.0, 0.0))
       {
       }
@@ -155,7 +155,7 @@ namespace pcl
       virtual void
       setAngularThreshold (float angular_threshold)
       {
-        angular_threshold_ = cosf (angular_threshold);
+        angular_threshold_ = std::cos (angular_threshold);
       }
 
       /** \brief Set the tolerance in radians for difference in normal direction between a point and the expected ground normal.
@@ -164,7 +164,7 @@ namespace pcl
       virtual void
       setGroundAngularThreshold (float angular_threshold)
       {
-        road_angular_threshold_ = cosf (angular_threshold);
+        road_angular_threshold_ = std::cos (angular_threshold);
       }
 
       /** \brief Set the expected ground plane normal with respect to the sensor.  Pixels labeled as ground must be within ground_angular_threshold radians of this normal to be labeled as ground.
@@ -181,7 +181,7 @@ namespace pcl
       inline float
       getAngularThreshold () const
       {
-        return (acosf (angular_threshold_) );
+        return (std::acos (angular_threshold_) );
       }
 
       /** \brief Set the tolerance in meters for difference in perpendicular distance (d component of plane equation) to the plane between neighboring points, to be considered part of the same plane.
@@ -242,6 +242,6 @@ namespace pcl
       Eigen::Vector3f desired_road_axis_;
 
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 }

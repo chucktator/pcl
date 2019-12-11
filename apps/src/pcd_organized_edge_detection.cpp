@@ -58,9 +58,9 @@ using namespace std::chrono_literals;
 float default_th_dd = 0.02f;
 int   default_max_search = 50;
 
-typedef pcl::PointCloud<pcl::PointXYZRGBA> Cloud;
-typedef Cloud::Ptr CloudPtr;
-typedef Cloud::ConstPtr CloudConstPtr;
+using Cloud = pcl::PointCloud<pcl::PointXYZRGBA>;
+using CloudPtr = Cloud::Ptr;
+using CloudConstPtr = Cloud::ConstPtr;
 
 pcl::visualization::PCLVisualizer viewer ("3D Edge Viewer");
 
@@ -170,7 +170,7 @@ compute (const pcl::PCLPointCloud2::ConstPtr &input, pcl::PCLPointCloud2 &output
   // Make gray point clouds
   for (auto &point : cloud->points)
   {
-    uint8_t gray = uint8_t ((point.r + point.g + point.b) / 3);
+    std::uint8_t gray = std::uint8_t ((point.r + point.g + point.b) / 3);
     point.r = point.g = point.b = gray;
   }
 

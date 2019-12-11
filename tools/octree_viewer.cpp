@@ -77,7 +77,7 @@ public:
       return;
 
     //register keyboard callbacks
-    viz.registerKeyboardCallback(&OctreeViewer::keyboardEventOccurred, *this, 0);
+    viz.registerKeyboardCallback(&OctreeViewer::keyboardEventOccurred, *this, nullptr);
 
     //key legends
     viz.addText ("Keys:", 0, 170, 0.0, 1.0, 0.0, "keys_t");
@@ -88,7 +88,7 @@ public:
     viz.addText ("n -> Toggle original point cloud representation", 10, 95, 0.0, 1.0, 0.0, "key_n_t");
 
     //set current level to half the maximum one
-    displayedDepth = static_cast<int> (floor (octree.getTreeDepth() / 2.0));
+    displayedDepth = static_cast<int> (std::floor (octree.getTreeDepth() / 2.0));
     if (displayedDepth == 0)
       displayedDepth = 1;
 
@@ -434,8 +434,7 @@ private:
       extractPointsAtLevel(displayedDepth);
       return true;
     }
-    else
-      return false;
+    return false;
   }
 
   /* \brief Helper function to decrease the octree display level by one

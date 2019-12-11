@@ -141,12 +141,12 @@ namespace pcl
     class OctreePointCloudVoxelCentroid : public OctreePointCloud<PointT, LeafContainerT, BranchContainerT>
     {
       public:
-        typedef boost::shared_ptr<OctreePointCloudVoxelCentroid<PointT, LeafContainerT> > Ptr;
-        typedef boost::shared_ptr<const OctreePointCloudVoxelCentroid<PointT, LeafContainerT> > ConstPtr;
+        using Ptr = boost::shared_ptr<OctreePointCloudVoxelCentroid<PointT, LeafContainerT> >;
+        using ConstPtr = boost::shared_ptr<const OctreePointCloudVoxelCentroid<PointT, LeafContainerT> >;
 
-        typedef OctreePointCloud<PointT, LeafContainerT, BranchContainerT> OctreeT;
-        typedef typename OctreeT::LeafNode LeafNode;
-        typedef typename OctreeT::BranchNode BranchNode;
+        using OctreeT = OctreePointCloud<PointT, LeafContainerT, BranchContainerT>;
+        using LeafNode = typename OctreeT::LeafNode;
+        using BranchNode = typename OctreeT::BranchNode;
 
         /** \brief OctreePointCloudVoxelCentroids class constructor.
           * \param[in] resolution_arg octree resolution at lowest octree level
@@ -210,7 +210,7 @@ namespace pcl
           * \param[out] voxel_centroid_list_arg results are written to this vector of PointT elements
           * \return number of occupied voxels
           */
-        size_t
+        std::size_t
         getVoxelCentroids (typename OctreePointCloud<PointT, LeafContainerT, BranchContainerT>::AlignedPointTVector &voxel_centroid_list_arg) const;
 
         /** \brief Recursively explore the octree and output a PointT vector of centroids for all occupied voxels.

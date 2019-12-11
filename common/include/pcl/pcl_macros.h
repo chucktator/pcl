@@ -36,22 +36,12 @@
 
 #pragma once
 
-#include <pcl/pcl_config.h>
-#include <boost/cstdint.hpp>
-#include <cstdlib>
-
-namespace pcl
-{
-  using boost::uint8_t;
-  using boost::int8_t;
-  using boost::int16_t;
-  using boost::uint16_t;
-  using boost::int32_t;
-  using boost::uint32_t;
-  using boost::int64_t;
-  using boost::uint64_t;
-  using boost::int_fast16_t;
-}
+/**
+ * \file pcl/pcl_macros.h
+ *
+ * \brief Defines all the PCL and non-PCL macros used
+ * \ingroup common
+ */
 
 #if defined __INTEL_COMPILER
   #pragma warning disable 2196 2536 279
@@ -65,25 +55,59 @@ namespace pcl
   #pragma warning (disable: 4018 4244 4267 4521 4251 4661 4305 4503 4146)
 #endif
 
-#include <iostream>
-#include <cstdarg>
-#include <cstdio>
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
 #endif
 #include <cmath>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
+#include <iostream>
+
+#include <boost/cstdint.hpp>
+
+//Eigen has an enum that clashes with X11 Success define, which is ultimately included by pcl
+#ifdef Success
+  #undef Success
+#endif
+#include <Eigen/Core>
+
+#include <pcl/pcl_config.h>
+
+namespace pcl
+{
+  using uint8_t [[deprecated("use std::uint8_t instead of pcl::uint8_t")]] = std::uint8_t;
+  using int8_t [[deprecated("use std::int8_t instead of pcl::int8_t")]] = std::int8_t;
+  using uint16_t [[deprecated("use std::uint16_t instead of pcl::uint16_t")]] = std::uint16_t;
+  using int16_t [[deprecated("use std::uint16_t instead of pcl::int16_t")]] = std::int16_t;
+  using uint32_t [[deprecated("use std::uint32_t instead of pcl::uint32_t")]] = std::uint32_t;
+  using int32_t [[deprecated("use std::int32_t instead of pcl::int32_t")]] = std::int32_t;
+  using uint64_t [[deprecated("use std::uint64_t instead of pcl::uint64_t")]] = std::uint64_t;
+  using int64_t [[deprecated("use std::int64_t instead of pcl::int64_t")]] = std::int64_t;
+  using int_fast16_t [[deprecated("use std::int_fast16_t instead of pcl::int_fast16_t")]] = std::int_fast16_t;
+}
 
 #if defined _WIN32 && defined _MSC_VER
 
-// If M_PI is not defined, then probably all of them are undefined
-#ifndef M_PI
+// Define math constants, without including math.h, to prevent polluting global namespace with old math methods
 // Copied from math.h
-# define M_PI   3.14159265358979323846     // pi
-# define M_PI_2    1.57079632679489661923  // pi/2
-# define M_PI_4    0.78539816339744830962  // pi/4
-# define M_PIl   3.1415926535897932384626433832795029L  // pi
-# define M_PI_2l 1.5707963267948966192313216916397514L  // pi/2
-# define M_PI_4l 0.7853981633974483096156608458198757L  // pi/4
+#ifndef _MATH_DEFINES_DEFINED
+  #define _MATH_DEFINES_DEFINED
+
+  #define M_E        2.71828182845904523536   // e
+  #define M_LOG2E    1.44269504088896340736   // log2(e)
+  #define M_LOG10E   0.434294481903251827651  // log10(e)
+  #define M_LN2      0.693147180559945309417  // ln(2)
+  #define M_LN10     2.30258509299404568402   // ln(10)
+  #define M_PI       3.14159265358979323846   // pi
+  #define M_PI_2     1.57079632679489661923   // pi/2
+  #define M_PI_4     0.785398163397448309616  // pi/4
+  #define M_1_PI     0.318309886183790671538  // 1/pi
+  #define M_2_PI     0.636619772367581343076  // 2/pi
+  #define M_2_SQRTPI 1.12837916709551257390   // 2/sqrt(pi)
+  #define M_SQRT2    1.41421356237309504880   // sqrt(2)
+  #define M_SQRT1_2  0.707106781186547524401  // 1/sqrt(2)
 #endif
 
 // Stupid. This should be removed when all the PCL dependencies have min/max fixed.
@@ -94,7 +118,21 @@ namespace pcl
 # define __PRETTY_FUNCTION__ __FUNCTION__
 # define __func__ __FUNCTION__
 
-#endif
+#endif //defined _WIN32 && defined _MSC_VER
+
+
+template<typename T>
+[[deprecated("use std::isnan instead of pcl_isnan")]]
+bool pcl_isnan (T&& x) { return std::isnan (std::forward<T> (x)); }
+
+template<typename T>
+[[deprecated("use std::isfinite instead of pcl_isfinite")]]
+bool pcl_isfinite (T&& x) { return std::isfinite (std::forward<T> (x)); }
+
+template<typename T>
+[[deprecated("use std::isinf instead of pcl_isinf")]]
+bool pcl_isinf (T&& x) { return std::isinf (std::forward<T> (x)); }
+
 
 #ifndef DEG2RAD
 #define DEG2RAD(x) ((x)*0.017453293)
@@ -115,12 +153,12 @@ namespace pcl
 __inline double
 pcl_round (double number)
 {
-  return (number < 0.0 ? ceil (number - 0.5) : floor (number + 0.5));
+  return (number < 0.0 ? std::ceil (number - 0.5) : std::floor (number + 0.5));
 }
 __inline float
 pcl_round (float number)
 {
-  return (number < 0.0f ? ceilf (number - 0.5f) : floorf (number + 0.5f));
+  return (number < 0.0f ? std::ceil (number - 0.5f) : std::floor (number + 0.5f));
 }
 
 #ifdef __GNUC__
@@ -182,7 +220,7 @@ pcl_round (float number)
 #endif
 
 #ifndef SET_ARRAY
-#define SET_ARRAY(var, value, size) { for (int i = 0; i < static_cast<int> (size); ++i) var[i]=value; }
+#define SET_ARRAY(var, value, size) { for (decltype(size) i = 0; i < size; ++i) var[i]=value; }
 #endif
 
 #ifndef PCL_EXTERN_C
@@ -272,7 +310,7 @@ pcl_round (float number)
 #endif
 
 inline void*
-aligned_malloc (size_t size)
+aligned_malloc (std::size_t size)
 {
   void *ptr;
 #if   defined (MALLOC_ALIGNED)
@@ -308,3 +346,41 @@ aligned_free (void* ptr)
   #error aligned_free not supported on your platform
 #endif
 }
+
+/**
+ * \brief Macro to signal a class requires a custom allocator
+ *
+ *  It's an implementation detail to have pcl::has_custom_allocator work, a
+ *  thin wrapper over Eigen's own macro
+ *
+ * \see pcl::has_custom_allocator, pcl::make_shared
+ * \ingroup common
+ */
+#define PCL_MAKE_ALIGNED_OPERATOR_NEW \
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
+  using _custom_allocator_type_trait = void;
+
+/**
+ * \brief Macro to add a no-op or a fallthrough attribute based on compiler feature
+ *
+ * \ingroup common
+ */
+#if (__cplusplus >= 201703L) || (defined(_MSC_VER) && (_MSC_VER >= 1910) && (_MSVC_LANG >= 201703L))
+  #define PCL_FALLTHROUGH [[fallthrough]];
+#elif defined(__clang__)
+  #define PCL_FALLTHROUGH [[clang::fallthrough]];
+#elif defined(__GNUC__) && (__GNUC__ >= 7)
+  #define PCL_FALLTHROUGH [[gnu::fallthrough]];
+#else
+  #define PCL_FALLTHROUGH
+#endif
+
+#if (__cplusplus >= 201703L) || (defined(_MSC_VER) && (_MSC_VER >= 1911) && (_MSVC_LANG >= 201703L))
+  #define PCL_NODISCARD [[nodiscard]]
+#elif defined(__clang__) && (PCL_LINEAR_VERSION(__clang_major__, __clang_minor__, 0) >= PCL_LINEAR_VERSION(3, 9, 0))
+  #define PCL_NODISCARD [[clang::warn_unused_result]]
+#elif defined(__GNUC__)
+  #define PCL_NODISCARD [[gnu::warn_unused_result]]
+#else
+  #define PCL_NODISCARD
+#endif

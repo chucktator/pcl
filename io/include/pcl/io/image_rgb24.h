@@ -37,9 +37,7 @@
 #pragma once
 
 #include <pcl/pcl_config.h>
-
 #include <pcl/pcl_macros.h>
-#include <boost/chrono.hpp>
 
 #include <pcl/io/image.h>
 
@@ -77,12 +75,12 @@ namespace pcl
       private:
 
         // Struct used for type conversion
-        typedef struct
+        struct RGB888Pixel
         {
-          uint8_t r;
-          uint8_t g;
-          uint8_t b;
-        } RGB888Pixel;
+          std::uint8_t r;
+          std::uint8_t g;
+          std::uint8_t b;
+        };
     };
 
   } // namespace

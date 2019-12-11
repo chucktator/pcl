@@ -61,13 +61,13 @@
 using namespace std::chrono_literals;
 using namespace pcl::console;
 
-typedef pcl::visualization::PointCloudColorHandler<pcl::PCLPointCloud2> ColorHandler;
-typedef ColorHandler::Ptr ColorHandlerPtr;
-typedef ColorHandler::ConstPtr ColorHandlerConstPtr;
+using ColorHandler = pcl::visualization::PointCloudColorHandler<pcl::PCLPointCloud2>;
+using ColorHandlerPtr = ColorHandler::Ptr;
+using ColorHandlerConstPtr = ColorHandler::ConstPtr;
 
-typedef pcl::visualization::PointCloudGeometryHandler<pcl::PCLPointCloud2> GeometryHandler;
-typedef GeometryHandler::Ptr GeometryHandlerPtr;
-typedef GeometryHandler::ConstPtr GeometryHandlerConstPtr;
+using GeometryHandler = pcl::visualization::PointCloudGeometryHandler<pcl::PCLPointCloud2>;
+using GeometryHandlerPtr = GeometryHandler::Ptr;
+using GeometryHandlerConstPtr = GeometryHandler::ConstPtr;
 
 #define NORMALS_SCALE 0.01f
 #define PC_SCALE 0.001f
@@ -195,7 +195,7 @@ pp_callback (const pcl::visualization::PointPickingEvent& event, void* cookie)
   std::stringstream ss;
   ss << idx;
   // Get the cloud's fields
-  for (size_t i = 0; i < cloud->fields.size (); ++i)
+  for (std::size_t i = 0; i < cloud->fields.size (); ++i)
   {
     if (!isMultiDimensionalFeatureField (cloud->fields[i]))
       continue;
@@ -216,7 +216,7 @@ pp_callback (const pcl::visualization::PointPickingEvent& event, void* cookie)
 int
 main (int argc, char** argv)
 {
-  srand (static_cast<unsigned int> (time (0)));
+  srand (static_cast<unsigned int> (time (nullptr)));
 
   print_info ("The viewer window provides interactive commands; for help, press 'h' or 'H' from within the window.\n");
 
@@ -235,7 +235,7 @@ main (int argc, char** argv)
   std::vector<int> p_file_indices   = pcl::console::parse_file_extension_argument (argc, argv, ".pcd");
   std::vector<int> vtk_file_indices = pcl::console::parse_file_extension_argument (argc, argv, ".vtk");
 
-  if (p_file_indices.size () == 0 && vtk_file_indices.size () == 0)
+  if (p_file_indices.empty () && vtk_file_indices.empty ())
   {
     print_error ("No .PCD or .VTK file given. Nothing to visualize.\n");
     return (-1);
@@ -249,8 +249,8 @@ main (int argc, char** argv)
   bool fcolorparam = pcl::console::parse_multiple_3x_arguments (argc, argv, "-fc", fcolor_r, fcolor_g, fcolor_b);
 
   std::vector<double> pose_x, pose_y, pose_z, pose_roll, pose_pitch, pose_yaw;
-  bool poseparam = pcl::console::parse_multiple_3x_arguments (argc, argv, "-position", pose_x, pose_y, pose_z);
-  poseparam &= pcl::console::parse_multiple_3x_arguments (argc, argv, "-orientation", pose_roll, pose_pitch, pose_yaw);
+  pcl::console::parse_multiple_3x_arguments (argc, argv, "-position", pose_x, pose_y, pose_z);
+  pcl::console::parse_multiple_3x_arguments (argc, argv, "-orientation", pose_roll, pose_pitch, pose_yaw);
 
   std::vector<int> psize;
   pcl::console::parse_multiple_arguments (argc, argv, "-ps", psize);
@@ -303,15 +303,15 @@ main (int argc, char** argv)
   {
     print_highlight ("Multi-viewport rendering enabled.\n");
 
-    int y_s = static_cast<int>(floor (sqrt (static_cast<float>(p_file_indices.size () + vtk_file_indices.size ()))));
-    x_s = y_s + static_cast<int>(ceil (double (p_file_indices.size () + vtk_file_indices.size ()) / double (y_s) - y_s));
+    int y_s = static_cast<int>(std::floor (sqrt (static_cast<float>(p_file_indices.size () + vtk_file_indices.size ()))));
+    x_s = y_s + static_cast<int>(std::ceil (double (p_file_indices.size () + vtk_file_indices.size ()) / double (y_s) - y_s));
 
-    if (p_file_indices.size () != 0)
+    if (!p_file_indices.empty ())
     {
       print_highlight ("Preparing to load "); print_value ("%d", p_file_indices.size ()); print_info (" pcd files.\n");
     }
 
-    if (vtk_file_indices.size () != 0)
+    if (!vtk_file_indices.empty ())
     {
       print_highlight ("Preparing to load "); print_value ("%d", vtk_file_indices.size ()); print_info (" vtk files.\n");
     }
@@ -324,15 +324,15 @@ main (int argc, char** argv)
   }
 
   // Fix invalid multiple arguments
-  if (psize.size () != p_file_indices.size () && psize.size () > 0)
-    for (size_t i = psize.size (); i < p_file_indices.size (); ++i)
+  if (psize.size () != p_file_indices.size () && !psize.empty ())
+    for (std::size_t i = psize.size (); i < p_file_indices.size (); ++i)
       psize.push_back (1);
-  if (opaque.size () != p_file_indices.size () && opaque.size () > 0)
-    for (size_t i = opaque.size (); i < p_file_indices.size (); ++i)
+  if (opaque.size () != p_file_indices.size () && !opaque.empty ())
+    for (std::size_t i = opaque.size (); i < p_file_indices.size (); ++i)
       opaque.push_back (1.0);
 
-  if (shadings.size () != p_file_indices.size () && shadings.size () > 0)
-    for (size_t i = shadings.size (); i < p_file_indices.size (); ++i)
+  if (shadings.size () != p_file_indices.size () && !shadings.empty ())
+    for (std::size_t i = shadings.size (); i < p_file_indices.size (); ++i)
       shadings.emplace_back("flat");
 
   // Create the PCLPlotter object
@@ -348,7 +348,7 @@ main (int argc, char** argv)
   GeometryHandlerPtr geometry_handler;
 
   // Go through VTK files
-  for (size_t i = 0; i < vtk_file_indices.size (); ++i)
+  for (std::size_t i = 0; i < vtk_file_indices.size (); ++i)
   {
     // Load file
     tt.tic ();
@@ -387,15 +387,15 @@ main (int argc, char** argv)
       p->setShapeRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, fcolor_r[i], fcolor_g[i], fcolor_b[i], cloud_name.str ());
 
     // Change the shape rendered point size
-    if (psize.size () > 0)
+    if (!psize.empty ())
       p->setShapeRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, psize.at (i), cloud_name.str ());
 
     // Change the shape rendered opacity
-    if (opaque.size () > 0)
+    if (!opaque.empty ())
       p->setShapeRenderingProperties (pcl::visualization::PCL_VISUALIZER_OPACITY, opaque.at (i), cloud_name.str ());
 
     // Change the shape rendered shading
-    if (shadings.size () > 0)
+    if (!shadings.empty ())
     {
       if (shadings[i] == "flat")
       {
@@ -417,7 +417,7 @@ main (int argc, char** argv)
 
   pcl::PCLPointCloud2::Ptr cloud;
   // Go through PCD files
-  for (size_t i = 0; i < p_file_indices.size (); ++i)
+  for (std::size_t i = 0; i < p_file_indices.size (); ++i)
   {
     tt.tic ();
     cloud.reset (new pcl::PCLPointCloud2);
@@ -610,7 +610,7 @@ main (int argc, char** argv)
       int rgb_idx = 0;
       int label_idx = 0;
       int invalid_fields_count = 0;
-      for (size_t f = 0; f < cloud->fields.size (); ++f)
+      for (std::size_t f = 0; f < cloud->fields.size (); ++f)
       {
         if (!isValidFieldName (cloud->fields[f].name))
         {
@@ -650,11 +650,11 @@ main (int argc, char** argv)
       p->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_IMMEDIATE_RENDERING, 1.0, cloud_name.str ());
 
     // Change the cloud rendered point size
-    if (psize.size () > 0)
+    if (!psize.empty ())
       p->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, psize.at (i), cloud_name.str ());
 
     // Change the cloud rendered opacity
-    if (opaque.size () > 0)
+    if (!opaque.empty ())
       p->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_OPACITY, opaque.at (i), cloud_name.str ());
 
     // Reset camera viewpoint to center of cloud if camera parameters were not passed manually and this is the first loaded cloud
@@ -678,10 +678,10 @@ main (int argc, char** argv)
     else if (!vtk_file_indices.empty ())
       str = std::string (argv[vtk_file_indices.at (0)]);
 
-    for (size_t i = 1; i < p_file_indices.size (); ++i)
+    for (std::size_t i = 1; i < p_file_indices.size (); ++i)
       str += ", " + std::string (argv[p_file_indices.at (i)]);
 
-    for (size_t i = 1; i < vtk_file_indices.size (); ++i)
+    for (std::size_t i = 1; i < vtk_file_indices.size (); ++i)
       str += ", " + std::string (argv[vtk_file_indices.at (i)]);
 
     p->addText (str, 5, 5, 10, 1.0, 1.0, 1.0, "text_allnames");
@@ -730,7 +730,6 @@ main (int argc, char** argv)
       {
         if (p->wasStopped ())
         {
-          stopped = true;
           break;
         }
         p->spinOnce ();

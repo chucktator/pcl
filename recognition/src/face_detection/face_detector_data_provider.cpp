@@ -4,6 +4,8 @@
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/io/pcd_io.h>
 
+#include <random>
+
 //Uncomment the following lines and set PCL_FACE_DETECTION_VIS_TRAINING_FDDP to 1
 //to visualize the training process and change the CMakeLists.txt accordingly.
 //#include <pcl/visualization/pcl_visualizer.h>
@@ -136,13 +138,14 @@ void pcl::face_detection::FaceDetectorDataProvider<FeatureType, DataSet, LabelTy
   if (min_images_per_bin_ != -1)
   {
     std::cout << "Reducing unbalance of the dataset." << std::endl;
+    std::mt19937 rng((std::random_device()()));
     for (int i = 0; i < num_yaw; i++)
     {
       for (int j = 0; j < num_pitch; j++)
       {
         if (yaw_pitch_bins[i][j] >= min_images_per_bin_)
         {
-          std::random_shuffle (image_files_per_bin[i][j].begin (), image_files_per_bin[i][j].end ());
+          std::shuffle (image_files_per_bin[i][j].begin (), image_files_per_bin[i][j].end (), rng);
           image_files_per_bin[i][j].resize (min_images_per_bin_);
           yaw_pitch_bins[i][j] = min_images_per_bin_;
         }
@@ -167,8 +170,8 @@ template<class FeatureType, class DataSet, class LabelType, class ExampleIndex, 
 void pcl::face_detection::FaceDetectorDataProvider<FeatureType, DataSet, LabelType, ExampleIndex, NodeType>::getDatasetAndLabels(DataSet & data_set,
     std::vector<LabelType> & label_data, std::vector<ExampleIndex> & examples)
 {
-  srand (static_cast<unsigned int>(time (NULL)));
-  std::random_shuffle (image_files_.begin (), image_files_.end ());
+  std::mt19937 rng((std::random_device()()));
+  std::shuffle (image_files_.begin (), image_files_.end (), rng);
   std::vector < std::string > files;
   files = image_files_;
   files.resize (std::min (num_images_, static_cast<int> (files.size ())));
@@ -183,7 +186,7 @@ void pcl::face_detection::FaceDetectorDataProvider<FeatureType, DataSet, LabelTy
   pcl::visualization::PCLVisualizer vis("training");
 #endif
 
-  for (size_t j = 0; j < files.size (); j++)
+  for (std::size_t j = 0; j < files.size (); j++)
   {
 
 #if PCL_FACE_DETECTION_VIS_TRAINING_FDDP == 1
@@ -207,14 +210,14 @@ void pcl::face_detection::FaceDetectorDataProvider<FeatureType, DataSet, LabelTy
 
     //crop images to remove as many NaNs as possible and reduce the memory footprint
     {
-      size_t min_col, min_row;
-      size_t max_col, max_row;
-      min_col = min_row = std::numeric_limits<size_t>::max ();
+      std::size_t min_col, min_row;
+      std::size_t max_col, max_row;
+      min_col = min_row = std::numeric_limits<std::size_t>::max ();
       max_col = max_row = 0;
 
-      for (size_t col = 0; col < loaded_cloud->width; col++)
+      for (std::size_t col = 0; col < loaded_cloud->width; col++)
       {
-        for (size_t row = 0; row < loaded_cloud->height; row++)
+        for (std::size_t row = 0; row < loaded_cloud->height; row++)
         {
           if (pcl::isFinite (loaded_cloud->at (col, row)))
           {
@@ -292,16 +295,16 @@ void pcl::face_detection::FaceDetectorDataProvider<FeatureType, DataSet, LabelTy
 
     //Using cloud labels estimate a 2D window from where to extract positive samples
     //Rest can be used to extract negative samples
-    size_t min_col, min_row;
-    size_t max_col, max_row;
-    min_col = min_row = std::numeric_limits<size_t>::max ();
+    std::size_t min_col, min_row;
+    std::size_t max_col, max_row;
+    min_col = min_row = std::numeric_limits<std::size_t>::max ();
     max_col = max_row = 0;
 
     //std::cout << cloud_labels->width << " " << cloud_labels->height << std::endl;
 
-    for (size_t col = 0; col < cloud_labels->width; col++)
+    for (std::size_t col = 0; col < cloud_labels->width; col++)
     {
-      for (size_t row = 0; row < cloud_labels->height; row++)
+      for (std::size_t row = 0; row < cloud_labels->height; row++)
       {
         if (cloud_labels->at (col, row).label == 1)
         {
@@ -369,7 +372,7 @@ void pcl::face_detection::FaceDetectorDataProvider<FeatureType, DataSet, LabelTy
       int neg_extracted = 0;
       int w_size_2 = static_cast<int> (w_size_ / 2);
 
-      typedef std::pair<int, int> pixelpair;
+      using pixelpair = std::pair<int, int>;
       std::vector < pixelpair > negative_p, positive_p;
       //get negative and positive indices to sample from
       for (int col = 0; col < (static_cast<int> (cloud_labels->width) - w_size_); col++)
@@ -393,8 +396,8 @@ void pcl::face_detection::FaceDetectorDataProvider<FeatureType, DataSet, LabelTy
       }
 
       //shuffle and resize
-      std::random_shuffle (positive_p.begin (), positive_p.end ());
-      std::random_shuffle (negative_p.begin (), negative_p.end ());
+      std::shuffle (positive_p.begin (), positive_p.end (), rng);
+      std::shuffle (negative_p.begin (), negative_p.end (), rng);
       positive_p.resize (N_patches);
       negative_p.resize (N_patches);
 
@@ -518,7 +521,7 @@ void pcl::face_detection::FaceDetectorDataProvider<FeatureType, DataSet, LabelTy
 
   //train random forest and make persistent
   std::vector<int> example_indices;
-  for (size_t i = 0; i < labels.size (); i++)
+  for (std::size_t i = 0; i < labels.size (); i++)
     example_indices.push_back (static_cast<int> (i));
 
   label_data = labels;

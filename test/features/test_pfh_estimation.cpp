@@ -51,8 +51,8 @@
 #include <pcl/features/gfpfh.h>
 #include <pcl/io/pcd_io.h>
 
-typedef pcl::PointNormal PointT;
-typedef pcl::search::KdTree<PointT>::Ptr KdTreePtr;
+using PointT = pcl::PointNormal;
+using KdTreePtr = pcl::search::KdTree<PointT>::Ptr;
 using pcl::PointCloud;
 
 static PointCloud<PointT>::Ptr cloud (new PointCloud<PointT> ());
@@ -63,11 +63,11 @@ static KdTreePtr tree;
 template<template<class, class, class> class FeatureEstimation, typename PointT, typename NormalT, typename OutputT> void
 testIndicesAndSearchSurface (const typename PointCloud<PointT>::Ptr & points,
                              const typename PointCloud<NormalT>::Ptr & normals,
-                             const boost::shared_ptr<std::vector<int> > & indices, int ndims)
+                             const pcl::IndicesPtr & indices, int ndims)
 
 {
-  typedef pcl::search::KdTree<PointT> KdTreeT;
-  typedef FeatureEstimation<PointT, NormalT, OutputT> FeatureEstimationT;
+  using KdTreeT = pcl::search::KdTree<PointT>;
+  using FeatureEstimationT = FeatureEstimation<PointT, NormalT, OutputT>;
 
   //
   // Test setIndices and setSearchSurface
@@ -106,7 +106,7 @@ testIndicesAndSearchSurface (const typename PointCloud<PointT>::Ptr & points,
   // All three of the above cases should produce equivalent results
   ASSERT_EQ (output0.size (), output1.size ());
   ASSERT_EQ (output1.size (), output2.size ());
-  for (size_t i = 0; i < output1.size (); ++i)
+  for (std::size_t i = 0; i < output1.size (); ++i)
   {
     for (int j = 0; j < ndims; ++j)
     {
@@ -120,8 +120,8 @@ testIndicesAndSearchSurface (const typename PointCloud<PointT>::Ptr & points,
   //
   PointCloud<OutputT> output3, output4;
 
-  boost::shared_ptr<std::vector<int> > indices2 (new std::vector<int> (0));
-  for (size_t i = 0; i < (indices->size ()/2); ++i)
+  pcl::IndicesPtr indices2 (new pcl::Indices (0));
+  for (std::size_t i = 0; i < (indices->size ()/2); ++i)
     indices2->push_back (static_cast<int> (i));
 
   // Compute with all points as search surface + the specified sub-cloud as "input" but for only a subset of indices
@@ -139,7 +139,7 @@ testIndicesAndSearchSurface (const typename PointCloud<PointT>::Ptr & points,
 
   // The two cases above should produce equivalent results
   ASSERT_EQ (output3.size (), output4.size ());
-  for (size_t i = 0; i < output3.size (); ++i)
+  for (std::size_t i = 0; i < output3.size (); ++i)
   {
     for (int j = 0; j < ndims; ++j)
     {
@@ -204,7 +204,7 @@ TEST (PCL, PFHEstimation)
 
   // Object
   PointCloud<PFHSignature125>::Ptr pfhs (new PointCloud<PFHSignature125> ());
-  boost::shared_ptr<std::vector<int> > indicesptr (new std::vector<int> (indices));
+  pcl::IndicesPtr indicesptr (new pcl::Indices (indices));
 
   // set parameters
   pfh.setInputCloud (cloud);
@@ -251,8 +251,8 @@ TEST (PCL, PFHEstimation)
 
   // Test results when setIndices and/or setSearchSurface are used
 
-  boost::shared_ptr<std::vector<int> > test_indices (new std::vector<int> (0));
-  for (size_t i = 0; i < cloud->size (); i+=3)
+  pcl::IndicesPtr test_indices (new pcl::Indices (0));
+  for (std::size_t i = 0; i < cloud->size (); i+=3)
     test_indices->push_back (static_cast<int> (i));
 
   testIndicesAndSearchSurface<pcl::PFHEstimation, PointT, PointT, PFHSignature125>
@@ -291,8 +291,9 @@ struct FPFHTest<FPFHEstimationOMP<PointT, PointT, FPFHSignature33> >
 };
 
 // Types which will be instantiated
-typedef ::testing::Types<FPFHEstimation<PointT, PointT, FPFHSignature33>,
-                         FPFHEstimationOMP<PointT, PointT, FPFHSignature33> > FPFHEstimatorTypes;
+using FPFHEstimatorTypes = ::testing::Types
+        <FPFHEstimation<PointT, PointT, FPFHSignature33>,
+         FPFHEstimationOMP<PointT, PointT, FPFHSignature33> >;
 TYPED_TEST_CASE (FPFHTest, FPFHEstimatorTypes);
 
 // This is a copy of the old FPFHEstimation test which will now
@@ -351,7 +352,7 @@ TYPED_TEST (FPFHTest, Estimation)
   Eigen::VectorXf fpfh_histogram (nr_subdiv + nr_subdiv + nr_subdiv);
   fpfh_histogram.setZero ();
   std::vector<float> dists (indices.size ());
-  for (size_t i = 0; i < dists.size (); ++i) dists[i] = static_cast<float> (i);
+  for (std::size_t i = 0; i < dists.size (); ++i) dists[i] = static_cast<float> (i);
   fpfh.weightPointSPFHSignature (hist_f1, hist_f2, hist_f3, indices, dists, fpfh_histogram);
 
   EXPECT_NEAR (fpfh_histogram[0],  1.9798 ,  1e-2);
@@ -390,7 +391,7 @@ TYPED_TEST (FPFHTest, Estimation)
 
   // Object
   PointCloud<FPFHSignature33>::Ptr fpfhs (new PointCloud<FPFHSignature33> ());
-  boost::shared_ptr<std::vector<int> > indicesptr (new std::vector<int> (indices));
+  pcl::IndicesPtr indicesptr (new pcl::Indices (indices));
 
   // set parameters
   fpfh.setInputCloud (cloud);
@@ -439,8 +440,8 @@ TYPED_TEST (FPFHTest, Estimation)
 
   // Test results when setIndices and/or setSearchSurface are used
 
-  boost::shared_ptr<std::vector<int> > test_indices (new std::vector<int> (0));
-  for (size_t i = 0; i < cloud->size (); i+=3)
+  pcl::IndicesPtr test_indices (new pcl::Indices (0));
+  for (std::size_t i = 0; i < cloud->size (); i+=3)
     test_indices->push_back (static_cast<int> (i));
 
   testIndicesAndSearchSurface<FPFHEstimation, PointT, PointT, FPFHSignature33>
@@ -456,7 +457,7 @@ TEST (PCL, VFHEstimation)
   // Object
   pcl::VFHEstimation<PointT, PointT, VFHSignature308> vfh;
   PointCloud<VFHSignature308>::Ptr vfhs (new PointCloud<VFHSignature308> ());
-  boost::shared_ptr<std::vector<int> > indicesptr (new std::vector<int> (indices));
+  pcl::IndicesPtr indicesptr (new pcl::Indices (indices));
 
   // set parameters
   vfh.setInputCloud (cloud);
@@ -468,7 +469,7 @@ TEST (PCL, VFHEstimation)
   vfh.compute (*vfhs);
   EXPECT_EQ (int (vfhs->points.size ()), 1);
 
-  //for (size_t d = 0; d < 308; ++d)
+  //for (std::size_t d = 0; d < 308; ++d)
   //  std::cerr << vfhs.points[0].histogram[d] << std::endl;
 }
 
@@ -497,7 +498,7 @@ TEST (PCL, GFPFH)
         p.z = static_cast<float> (z);
         cloud->points.push_back (p);
       }
-  cloud->width = static_cast<uint32_t> (cloud->points.size ());
+  cloud->width = static_cast<std::uint32_t> (cloud->points.size ());
   cloud->height = 1;
 
   pcl::GFPFHEstimation<PointXYZL, PointXYZL, GFPFHSignature16> gfpfh;
@@ -511,7 +512,7 @@ TEST (PCL, GFPFH)
   const float ref_values[] = { 1877, 6375, 5361, 14393, 6674, 2471, 2248, 2753, 3117, 4585, 14388, 32407, 15122, 3061, 3202, 794 };
 
   EXPECT_EQ (descriptor.points.size (), 1);
-  for (size_t i = 0; i < size_t (descriptor.points[0].descriptorSize ()); ++i)
+  for (std::size_t i = 0; i < std::size_t (descriptor.points[0].descriptorSize ()); ++i)
   {
     EXPECT_EQ (descriptor.points[0].histogram[i], ref_values[i]);
   }
@@ -535,7 +536,7 @@ main (int argc, char** argv)
 
 
   indices.reserve (cloud->size ());
-  for (size_t i = 0; i < cloud->size (); ++i)
+  for (std::size_t i = 0; i < cloud->size (); ++i)
     indices.push_back (static_cast<int> (i));
 
   tree.reset (new pcl::search::KdTree<PointT> (false));

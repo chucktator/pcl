@@ -68,7 +68,7 @@ pcl::SupervoxelClustering<PointT>::~SupervoxelClustering ()
 template <typename PointT> void
 pcl::SupervoxelClustering<PointT>::setInputCloud (const typename pcl::PointCloud<PointT>::ConstPtr& cloud)
 {
-  if ( cloud->size () == 0 )
+  if ( cloud->empty () )
   {
     PCL_ERROR ("[pcl::SupervoxelClustering::setInputCloud] Empty cloud set, doing nothing \n");
     return;
@@ -82,7 +82,7 @@ pcl::SupervoxelClustering<PointT>::setInputCloud (const typename pcl::PointCloud
 template <typename PointT> void
 pcl::SupervoxelClustering<PointT>::setNormalCloud (typename NormalCloudT::ConstPtr normal_cloud)
 {
-  if ( normal_cloud->size () == 0 )
+  if ( normal_cloud->empty () )
   {
     PCL_ERROR ("[pcl::SupervoxelClustering::setNormalCloud] Empty cloud set, doing nothing \n");
     return;
@@ -93,7 +93,7 @@ pcl::SupervoxelClustering<PointT>::setNormalCloud (typename NormalCloudT::ConstP
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> void
-pcl::SupervoxelClustering<PointT>::extract (std::map<uint32_t,typename Supervoxel<PointT>::Ptr > &supervoxel_clusters)
+pcl::SupervoxelClustering<PointT>::extract (std::map<std::uint32_t,typename Supervoxel<PointT>::Ptr > &supervoxel_clusters)
 {
   //timer_.reset ();
   //double t_start = timer_.getTime ();
@@ -145,9 +145,9 @@ pcl::SupervoxelClustering<PointT>::extract (std::map<uint32_t,typename Supervoxe
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> void
-pcl::SupervoxelClustering<PointT>::refineSupervoxels (int num_itr, std::map<uint32_t,typename Supervoxel<PointT>::Ptr > &supervoxel_clusters)
+pcl::SupervoxelClustering<PointT>::refineSupervoxels (int num_itr, std::map<std::uint32_t,typename Supervoxel<PointT>::Ptr > &supervoxel_clusters)
 {
-  if (supervoxel_helpers_.size () == 0)
+  if (supervoxel_helpers_.empty ())
   {
     PCL_ERROR ("[pcl::SupervoxelClustering::refineVoxelNormals] Supervoxels not extracted, doing nothing - (Call extract first!) \n");
     return;
@@ -181,7 +181,7 @@ pcl::SupervoxelClustering<PointT>::prepareForSegmentation ()
 {
   
   // if user forgot to pass point cloud or if it is empty
-  if ( input_->points.size () == 0 )
+  if ( input_->points.empty () )
     return (false);
   
   //Add the new cloud of data to the octree
@@ -189,7 +189,7 @@ pcl::SupervoxelClustering<PointT>::prepareForSegmentation ()
   //double prep_start = timer_.getTime ();
   if ( (use_default_transform_behaviour_ && input_->isOrganized ())
        || (!use_default_transform_behaviour_ && use_single_camera_transform_))
-      adjacency_octree_->setTransformFunction (boost::bind (&SupervoxelClustering::transformFunction, this, _1));
+      adjacency_octree_->setTransformFunction ([this] (PointT &p) { transformFunction (p); });
 
   adjacency_octree_->addPointsFromInputCloud ();
   //double prep_end = timer_.getTime ();
@@ -246,7 +246,7 @@ pcl::SupervoxelClustering<PointT>::computeVoxelData ()
     {
       VoxelData& voxel_data = (*leaf_itr)->getData ();
       voxel_data.normal_.normalize ();
-      voxel_data.owner_ = 0;
+      voxel_data.owner_ = nullptr;
       voxel_data.distance_ = std::numeric_limits<float>::max ();
       //Get the number of points in this leaf
       int num_points = (*leaf_itr)->getPointCounter ();
@@ -280,7 +280,7 @@ pcl::SupervoxelClustering<PointT>::computeVoxelData ()
       pcl::flipNormalTowardsViewpoint (voxel_centroid_cloud_->points[new_voxel_data.idx_], 0.0f,0.0f,0.0f, new_voxel_data.normal_);
       new_voxel_data.normal_[3] = 0.0f;
       new_voxel_data.normal_.normalize ();
-      new_voxel_data.owner_ = 0;
+      new_voxel_data.owner_ = nullptr;
       new_voxel_data.distance_ = std::numeric_limits<float>::max ();
     }
   }
@@ -322,12 +322,12 @@ pcl::SupervoxelClustering<PointT>::expandSupervoxels ( int depth )
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> void
-pcl::SupervoxelClustering<PointT>::makeSupervoxels (std::map<uint32_t,typename Supervoxel<PointT>::Ptr > &supervoxel_clusters)
+pcl::SupervoxelClustering<PointT>::makeSupervoxels (std::map<std::uint32_t,typename Supervoxel<PointT>::Ptr > &supervoxel_clusters)
 {
   supervoxel_clusters.clear ();
   for (typename HelperListT::iterator sv_itr = supervoxel_helpers_.begin (); sv_itr != supervoxel_helpers_.end (); ++sv_itr)
   {
-    uint32_t label = sv_itr->getLabel ();
+    std::uint32_t label = sv_itr->getLabel ();
     supervoxel_clusters[label].reset (new Supervoxel<PointT>);
     sv_itr->getXYZ (supervoxel_clusters[label]->centroid_.x,supervoxel_clusters[label]->centroid_.y,supervoxel_clusters[label]->centroid_.z);
     sv_itr->getRGB (supervoxel_clusters[label]->centroid_.rgba);
@@ -344,7 +344,7 @@ pcl::SupervoxelClustering<PointT>::createSupervoxelHelpers (std::vector<int> &se
 {
   
   supervoxel_helpers_.clear ();
-  for (size_t i = 0; i < seed_indices.size (); ++i)
+  for (std::size_t i = 0; i < seed_indices.size (); ++i)
   {
     supervoxel_helpers_.push_back (new SupervoxelHelper(i+1,this));
     //Find which leaf corresponds to this seed index
@@ -384,7 +384,7 @@ pcl::SupervoxelClustering<PointT>::selectInitialSupervoxelSeeds (std::vector<int
   std::vector<float> distance;
   closest_index.resize(1,0);
   distance.resize(1,0);
-  if (voxel_kdtree_ == 0)
+  if (!voxel_kdtree_)
   {
     voxel_kdtree_.reset (new pcl::search::KdTree<PointT>);
     voxel_kdtree_ ->setInputCloud (voxel_centroid_cloud_);
@@ -484,7 +484,7 @@ pcl::SupervoxelClustering<PointT>::getSupervoxelAdjacencyList (VoxelAdjacencyLis
 {
   adjacency_list_arg.clear ();
     //Add a vertex for each label, store ids in map
-  std::map <uint32_t, VoxelID> label_ID_map;
+  std::map <std::uint32_t, VoxelID> label_ID_map;
   for (typename HelperListT::const_iterator sv_itr = supervoxel_helpers_.cbegin (); sv_itr != supervoxel_helpers_.cend (); ++sv_itr)
   {
     VoxelID node_id = add_vertex (adjacency_list_arg);
@@ -494,8 +494,8 @@ pcl::SupervoxelClustering<PointT>::getSupervoxelAdjacencyList (VoxelAdjacencyLis
   
   for (typename HelperListT::const_iterator sv_itr = supervoxel_helpers_.cbegin (); sv_itr != supervoxel_helpers_.cend (); ++sv_itr)
   {
-    uint32_t label = sv_itr->getLabel ();
-    std::set<uint32_t> neighbor_labels;
+    std::uint32_t label = sv_itr->getLabel ();
+    std::set<std::uint32_t> neighbor_labels;
     sv_itr->getNeighborLabels (neighbor_labels);
     for (const unsigned int &neighbor_label : neighbor_labels)
     {
@@ -531,16 +531,16 @@ pcl::SupervoxelClustering<PointT>::getSupervoxelAdjacencyList (VoxelAdjacencyLis
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> void
-pcl::SupervoxelClustering<PointT>::getSupervoxelAdjacency (std::multimap<uint32_t, uint32_t> &label_adjacency) const
+pcl::SupervoxelClustering<PointT>::getSupervoxelAdjacency (std::multimap<std::uint32_t, std::uint32_t> &label_adjacency) const
 {
   label_adjacency.clear ();
   for (typename HelperListT::const_iterator sv_itr = supervoxel_helpers_.cbegin (); sv_itr != supervoxel_helpers_.cend (); ++sv_itr)
   {
-    uint32_t label = sv_itr->getLabel ();
-    std::set<uint32_t> neighbor_labels;
+    std::uint32_t label = sv_itr->getLabel ();
+    std::set<std::uint32_t> neighbor_labels;
     sv_itr->getNeighborLabels (neighbor_labels);
     for (const unsigned int &neighbor_label : neighbor_labels)
-      label_adjacency.insert (std::pair<uint32_t,uint32_t> (label, neighbor_label) );
+      label_adjacency.insert (std::pair<std::uint32_t,std::uint32_t> (label, neighbor_label) );
     //if (neighbor_labels.size () == 0)
     //  std::cout << label<<"(size="<<sv_itr->size () << ") has "<<neighbor_labels.size () << "\n";
   }
@@ -608,7 +608,7 @@ pcl::SupervoxelClustering<PointT>::getLabeledCloud () const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> pcl::PointCloud<pcl::PointNormal>::Ptr
-pcl::SupervoxelClustering<PointT>::makeSupervoxelNormalCloud (std::map<uint32_t,typename Supervoxel<PointT>::Ptr > &supervoxel_clusters)
+pcl::SupervoxelClustering<PointT>::makeSupervoxelNormalCloud (std::map<std::uint32_t,typename Supervoxel<PointT>::Ptr > &supervoxel_clusters)
 {
   pcl::PointCloud<pcl::PointNormal>::Ptr normal_cloud (new pcl::PointCloud<pcl::PointNormal>);
   normal_cloud->resize (supervoxel_clusters.size ());
@@ -781,7 +781,7 @@ pcl::SupervoxelClustering<PointT>::SupervoxelHelper::removeAllLeaves ()
   for (auto leaf_itr = leaves_.cbegin (); leaf_itr != leaves_.cend (); ++leaf_itr)
   {
     VoxelData& voxel = ((*leaf_itr)->getData ());
-    voxel.owner_ = 0;
+    voxel.owner_ = nullptr;
     voxel.distance_ = std::numeric_limits<float>::max ();
   }
   leaves_.clear ();
@@ -920,7 +920,7 @@ pcl::SupervoxelClustering<PointT>::SupervoxelHelper::getNormals (typename pcl::P
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> void
-pcl::SupervoxelClustering<PointT>::SupervoxelHelper::getNeighborLabels (std::set<uint32_t> &neighbor_labels) const
+pcl::SupervoxelClustering<PointT>::SupervoxelHelper::getNeighborLabels (std::set<std::uint32_t> &neighbor_labels) const
 {
   neighbor_labels.clear ();
   //For each leaf belonging to this supervoxel

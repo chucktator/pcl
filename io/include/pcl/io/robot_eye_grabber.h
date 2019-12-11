@@ -45,6 +45,9 @@
 #include <pcl/point_cloud.h>
 #include <boost/asio.hpp>
 
+#include <memory>
+#include <thread>
+
 namespace pcl
 {
 
@@ -59,8 +62,7 @@ namespace pcl
        * This signal is sent when the accumulated number of points reaches
        * the limit specified by setSignalPointCloudSize().
        */
-      typedef void (sig_cb_robot_eye_point_cloud_xyzi) (
-          const boost::shared_ptr<const pcl::PointCloud<pcl::PointXYZI> >&);
+      using sig_cb_robot_eye_point_cloud_xyzi = void (const pcl::PointCloud<pcl::PointXYZI>::ConstPtr &);
 
       /** \brief RobotEyeGrabber default constructor. */
       RobotEyeGrabber ();
@@ -114,12 +116,12 @@ namespace pcl
        * It is not safe to access this point cloud except if the grabber is
        * stopped or during the grabber callback.
        */
-      boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI> > getPointCloud() const;
+      pcl::PointCloud<pcl::PointXYZI>::Ptr getPointCloud() const;
 
     private:
 
       bool terminate_thread_;
-      size_t signal_point_cloud_size_;
+      std::size_t signal_point_cloud_size_;
       unsigned short data_port_;
       enum { MAX_LENGTH = 65535 };
       unsigned char receive_buffer_[MAX_LENGTH];
@@ -128,12 +130,12 @@ namespace pcl
       boost::asio::ip::address sensor_address_;
       boost::asio::ip::udp::endpoint sender_endpoint_;
       boost::asio::io_service io_service_;
-      boost::shared_ptr<boost::asio::ip::udp::socket> socket_;
-      boost::shared_ptr<boost::thread> socket_thread_;
-      boost::shared_ptr<boost::thread> consumer_thread_;
+      std::shared_ptr<boost::asio::ip::udp::socket> socket_;
+      std::shared_ptr<std::thread> socket_thread_;
+      std::shared_ptr<std::thread> consumer_thread_;
 
       pcl::SynchronizedQueue<boost::shared_array<unsigned char> > packet_queue_;
-      boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI> > point_cloud_xyzi_;
+      pcl::PointCloud<pcl::PointXYZI>::Ptr point_cloud_xyzi_;
       boost::signals2::signal<sig_cb_robot_eye_point_cloud_xyzi>* point_cloud_signal_;
 
       void consumerThreadLoop ();
@@ -141,8 +143,8 @@ namespace pcl
       void asyncSocketReceive ();
       void resetPointCloud ();
       void socketCallback (const boost::system::error_code& error, std::size_t number_of_bytes);
-      void convertPacketData (unsigned char *data_packet, size_t length);
+      void convertPacketData (unsigned char *data_packet, std::size_t length);
       void computeXYZI (pcl::PointXYZI& point_XYZI, unsigned char* point_data);
-      void computeTimestamp (boost::uint32_t& timestamp, unsigned char* point_data);
+      void computeTimestamp (std::uint32_t& timestamp, unsigned char* point_data);
   };
 }

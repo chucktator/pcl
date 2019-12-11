@@ -58,7 +58,7 @@ namespace pcl
     class CloudCommand : public QUndoCommand
     {
       public: 
-        CloudCommand (ConstItemList input_data, QUndoCommand* parent = 0);
+        CloudCommand (ConstItemList input_data, QUndoCommand* parent = nullptr);
         
         
         ~CloudCommand ();
@@ -81,7 +81,7 @@ namespace pcl
         inline void
         setInputData (ConstItemList input_data)
         {
-          original_data_ = input_data;
+          original_data_ = std::move(input_data);
         }
       protected:
         /** \brief Removes the original item(s) from the model and replaces with the replacement(s)
@@ -89,11 +89,11 @@ namespace pcl
          *  This stores the removed items in removed_items_
          */
         bool 
-        replaceOriginalWithNew (QList <const CloudComposerItem*> originals, QList <CloudComposerItem*> new_items);
+        replaceOriginalWithNew (const QList <const CloudComposerItem*>& originals, const QList <CloudComposerItem*>& new_items);
         
         /** \brief This removes new_items from the model and restores originals */
         bool
-        restoreOriginalRemoveNew (QList <const CloudComposerItem*> originals, QList <CloudComposerItem*> new_items);
+        restoreOriginalRemoveNew (const QList <const CloudComposerItem*>& originals, const QList <CloudComposerItem*>& new_items);
         
         ConstItemList original_data_;
         
@@ -121,7 +121,7 @@ namespace pcl
     class ModifyItemCommand : public CloudCommand
     {
       public: 
-        ModifyItemCommand (ConstItemList input_data, QUndoCommand* parent = 0);
+        ModifyItemCommand (ConstItemList input_data, QUndoCommand* parent = nullptr);
     
         bool
         runCommand (AbstractTool* tool) override;
@@ -140,7 +140,7 @@ namespace pcl
     class NewItemCloudCommand : public CloudCommand
     {
       public: 
-        NewItemCloudCommand (ConstItemList input_data, QUndoCommand* parent = 0);
+        NewItemCloudCommand (ConstItemList input_data, QUndoCommand* parent = nullptr);
       
         bool
         runCommand (AbstractTool* tool) override;
@@ -157,7 +157,7 @@ namespace pcl
     class SplitCloudCommand : public CloudCommand
     {
       public: 
-        SplitCloudCommand (ConstItemList input_data, QUndoCommand* parent = 0);
+        SplitCloudCommand (ConstItemList input_data, QUndoCommand* parent = nullptr);
       
         bool
         runCommand (AbstractTool* tool) override;
@@ -174,7 +174,7 @@ namespace pcl
     class DeleteItemCommand : public CloudCommand
     {
       public: 
-        DeleteItemCommand (ConstItemList input_data, QUndoCommand* parent = 0);
+        DeleteItemCommand (ConstItemList input_data, QUndoCommand* parent = nullptr);
       
         bool
         runCommand (AbstractTool* tool) override;
@@ -194,7 +194,7 @@ namespace pcl
          *  \param[in] input_data Input list of CloudItem s from the project model which will be merged
          *  \param[in] temporary_clouds Input list of CloudItems which 
          */
-        MergeCloudCommand (ConstItemList input_data, QUndoCommand* parent = 0);
+        MergeCloudCommand (ConstItemList input_data, QUndoCommand* parent = nullptr);
       
         bool
         runCommand (AbstractTool* tool) override;
@@ -206,7 +206,7 @@ namespace pcl
         redo () override;
         
         inline void
-        setSelectedIndicesMap( const QMap <CloudItem*, pcl::PointIndices::Ptr > selected_item_index_map)
+        setSelectedIndicesMap( const QMap <CloudItem*, pcl::PointIndices::Ptr >& selected_item_index_map)
         {
           selected_item_index_map_ = selected_item_index_map;
         }

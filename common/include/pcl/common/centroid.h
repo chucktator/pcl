@@ -38,6 +38,7 @@
 
 #pragma once
 
+#include <pcl/pcl_macros.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_traits.h>
 #include <pcl/PointIndices.h>
@@ -839,7 +840,7 @@ namespace pcl
   template<typename PointT, typename Scalar>
   struct NdCentroidFunctor
   {
-    typedef typename traits::POD<PointT>::type Pod;
+    using Pod = typename traits::POD<PointT>::type;
 
     NdCentroidFunctor (const PointT &p, Eigen::Matrix<Scalar, Eigen::Dynamic, 1> &centroid)
       : f_idx_ (0),
@@ -848,8 +849,8 @@ namespace pcl
 
     template<typename Key> inline void operator() ()
     {
-      typedef typename pcl::traits::datatype<PointT, Key>::type T;
-      const uint8_t* raw_ptr = reinterpret_cast<const uint8_t*>(&p_) + pcl::traits::offset<PointT, Key>::value;
+      using T = typename pcl::traits::datatype<PointT, Key>::type;
+      const std::uint8_t* raw_ptr = reinterpret_cast<const std::uint8_t*>(&p_) + pcl::traits::offset<PointT, Key>::value;
       const T* data_ptr = reinterpret_cast<const T*>(raw_ptr);
 
       // Check if the value is invalid
@@ -1044,17 +1045,17 @@ namespace pcl
       get (PointOutT& point) const;
 
       /** Get the total number of points that were added. */
-      inline size_t
+      inline std::size_t
       getSize () const
       {
         return (num_points_);
       }
 
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
 
     private:
 
-      size_t num_points_ = 0;
+      std::size_t num_points_ = 0;
       typename pcl::detail::Accumulators<PointT>::type accumulators_;
 
   };
@@ -1075,7 +1076,7 @@ namespace pcl
     * not valid.
     *
     * \ingroup common */
-  template <typename PointInT, typename PointOutT> size_t
+  template <typename PointInT, typename PointOutT> std::size_t
   computeCentroid (const pcl::PointCloud<PointInT>& cloud,
                    PointOutT& centroid);
 
@@ -1087,7 +1088,7 @@ namespace pcl
     * documentation for computeCentroid().
     *
     * \ingroup common */
-  template <typename PointInT, typename PointOutT> size_t
+  template <typename PointInT, typename PointOutT> std::size_t
   computeCentroid (const pcl::PointCloud<PointInT>& cloud,
                    const std::vector<int>& indices,
                    PointOutT& centroid);

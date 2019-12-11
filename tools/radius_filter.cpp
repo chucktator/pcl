@@ -42,9 +42,9 @@
 #include <pcl/filters/conditional_removal.h>
 
 
-typedef pcl::PointXYZ PointType;
-typedef pcl::PointCloud<PointType> Cloud;
-typedef Cloud::ConstPtr CloudConstPtr;
+using PointType = pcl::PointXYZ;
+using Cloud = pcl::PointCloud<PointType>;
+using CloudConstPtr = Cloud::ConstPtr;
 
 float default_radius = 1.0f;
 bool default_inside = true;
@@ -203,7 +203,7 @@ main (int argc, char** argv)
   }
   else
   {
-    if (input_dir != "" && boost::filesystem::exists (input_dir))
+    if (!input_dir.empty() && boost::filesystem::exists (input_dir))
     {
       std::vector<std::string> pcd_files;
       boost::filesystem::directory_iterator end_itr;

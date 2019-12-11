@@ -52,12 +52,7 @@ using namespace std::chrono_literals;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 OpenNIPassthrough::OpenNIPassthrough (pcl::OpenNIGrabber& grabber) 
-  : vis_ ()
-  , grabber_(grabber)
-  , device_id_ ()
-  , cloud_pass_()
-  , pass_ ()
-  , mtx_ ()
+  : grabber_(grabber)
   , ui_ (new Ui::MainWindow)
   , vis_timer_ (new QTimer (this))
 {
@@ -76,7 +71,7 @@ OpenNIPassthrough::OpenNIPassthrough (pcl::OpenNIGrabber& grabber)
   ui_->qvtk_widget->update (); 
 
   // Start the OpenNI data acquision
-  boost::function<void (const CloudConstPtr&)> f = boost::bind (&OpenNIPassthrough::cloud_cb, this, _1);
+  std::function<void (const CloudConstPtr&)> f = [this] (const CloudConstPtr& cloud) { cloud_cb (cloud); };
   boost::signals2::connection c = grabber_.registerCallback (f);
 
   grabber_.start ();

@@ -73,11 +73,12 @@ namespace pcl
       using SampleConsensusModelFromNormals<PointT, PointNT>::normal_distance_weight_;
       using SampleConsensusModel<PointT>::error_sqr_dists_;
 
-      typedef typename SampleConsensusModel<PointT>::PointCloud PointCloud;
-      typedef typename SampleConsensusModel<PointT>::PointCloudPtr PointCloudPtr;
-      typedef typename SampleConsensusModel<PointT>::PointCloudConstPtr PointCloudConstPtr;
+      using PointCloud = typename SampleConsensusModel<PointT>::PointCloud;
+      using PointCloudPtr = typename SampleConsensusModel<PointT>::PointCloudPtr;
+      using PointCloudConstPtr = typename SampleConsensusModel<PointT>::PointCloudConstPtr;
 
-      typedef boost::shared_ptr<SampleConsensusModelCylinder> Ptr;
+      using Ptr = boost::shared_ptr<SampleConsensusModelCylinder<PointT, PointNT> >;
+      using ConstPtr = boost::shared_ptr<const SampleConsensusModelCylinder<PointT, PointNT>>;
 
       /** \brief Constructor for base SampleConsensusModelCylinder.
         * \param[in] cloud the input point cloud dataset
@@ -233,7 +234,7 @@ namespace pcl
                             const Eigen::VectorXf &model_coefficients,
                             const double threshold) const override;
 
-      /** \brief Return an unique id for this model (SACMODEL_CYLINDER). */
+      /** \brief Return a unique id for this model (SACMODEL_CYLINDER). */
       inline pcl::SacModel 
       getModelType () const override { return (SACMODEL_CYLINDER); }
 
@@ -290,10 +291,10 @@ namespace pcl
       isSampleGood (const std::vector<int> &samples) const override;
 
     private:
-      /** \brief The axis along which we need to search for a plane perpendicular to. */
+      /** \brief The axis along which we need to search for a cylinder direction. */
       Eigen::Vector3f axis_;
     
-      /** \brief The maximum allowed difference between the plane normal and the given axis. */
+      /** \brief The maximum allowed difference between the cylinder direction and the given axis. */
       double eps_angle_;
 
       /** \brief Functor for the optimization function */

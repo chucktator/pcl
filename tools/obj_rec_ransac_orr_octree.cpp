@@ -200,7 +200,7 @@ void run (const char* file_name, float voxel_size)
 
   // Build the octree with the desired resolution
   ORROctree octree;
-  if ( normals_in->size () )
+  if ( !normals_in->empty () )
     octree.build (*points_in, voxel_size, &*normals_in);
   else
     octree.build (*points_in, voxel_size);
@@ -211,7 +211,7 @@ void run (const char* file_name, float voxel_size)
   // Get the average points in every full octree leaf
   octree.getFullLeavesPoints (*points_out);
   // Get the average normal at the points in each leaf
-  if ( normals_in->size () )
+  if ( !normals_in->empty () )
     octree.getNormalsOfFullLeaves (*normals_out);
 
   // The visualizer
@@ -224,7 +224,7 @@ void run (const char* file_name, float voxel_size)
   // Add the point clouds
   viz.addPointCloud (points_in, "cloud in");
   viz.addPointCloud (points_out, "cloud out");
-  if ( normals_in->size () )
+  if ( !normals_in->empty () )
     viz.addPointCloudNormals<PointXYZ,Normal> (points_out, normals_out, 1, 6.0f, "normals out");
 
   // Change the appearance
@@ -250,7 +250,7 @@ void run (const char* file_name, float voxel_size)
 
 bool vtk_to_pointcloud (const char* file_name, PointCloud<PointXYZ>& pcl_points, PointCloud<Normal>* pcl_normals)
 {
-  size_t len = strlen (file_name);
+  std::size_t len = strlen (file_name);
   if ( file_name[len-3] != 'v' || file_name[len-2] != 't' || file_name[len-1] != 'k' )
   {
     fprintf (stderr, "ERROR: we need a .vtk object!\n");
@@ -317,7 +317,7 @@ void show_octree (ORROctree* octree, PCLVisualizer& viz, bool show_full_leaves_o
   vtkSmartPointer<vtkPolyData> vtk_octree = vtkSmartPointer<vtkPolyData>::New ();
   vtkSmartPointer<vtkAppendPolyData> append = vtkSmartPointer<vtkAppendPolyData>::New ();
 
-  cout << "There are " << octree->getFullLeaves ().size () << " full leaves.\n";
+  std::cout << "There are " << octree->getFullLeaves ().size () << " full leaves.\n";
 
   if ( show_full_leaves_only )
   {

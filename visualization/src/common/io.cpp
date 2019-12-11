@@ -42,8 +42,10 @@
 #include <vtkSmartPointer.h>
 
 #include <pcl/visualization/common/io.h>
+#include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/eigen.h>
+#include <pcl/make_shared.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
@@ -53,7 +55,7 @@ pcl::visualization::getCorrespondingPointCloud (vtkPolyData *src,
 {
   // Iterate through the points and copy the data in a pcl::PointCloud
   pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.height = 1; cloud.width = static_cast<uint32_t> (src->GetNumberOfPoints ());
+  cloud.height = 1; cloud.width = static_cast<std::uint32_t> (src->GetNumberOfPoints ());
   cloud.is_dense = false;
   cloud.points.resize (cloud.width * cloud.height);
   for (vtkIdType i = 0; i < src->GetNumberOfPoints (); i++)
@@ -67,8 +69,7 @@ pcl::visualization::getCorrespondingPointCloud (vtkPolyData *src,
 
   // Compute a kd-tree for tgt
   pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> > tgt_ptr (new pcl::PointCloud<pcl::PointXYZ> (tgt));
-  kdtree.setInputCloud (tgt_ptr);
+  kdtree.setInputCloud (make_shared<PointCloud<PointXYZ>> (tgt));
 
   std::vector<int> nn_indices (1);
   std::vector<float> nn_dists (1);
@@ -85,7 +86,7 @@ pcl::visualization::getCorrespondingPointCloud (vtkPolyData *src,
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 bool 
-pcl::visualization::savePointData (vtkPolyData* data, const std::string &out_file, const boost::shared_ptr<CloudActorMap> &actors)
+pcl::visualization::savePointData (vtkPolyData* data, const std::string &out_file, const CloudActorMapPtr &actors)
 {
   // Clean the data (no duplicates!)
   vtkSmartPointer<vtkCleanPolyData> cleaner = vtkSmartPointer<vtkCleanPolyData>::New ();
@@ -126,8 +127,7 @@ pcl::visualization::savePointData (vtkPolyData* data, const std::string &out_fil
       pcl::console::print_error (stdout, "[failed]\n");
       return (false);
     }
-    else
-      pcl::console::print_debug ("[success]\n");
+    pcl::console::print_debug ("[success]\n");
  
     pcl::PointCloud<pcl::PointXYZ> cloud_xyz;
     pcl::fromPCLPointCloud2 (cloud, cloud_xyz);
@@ -147,8 +147,7 @@ pcl::visualization::savePointData (vtkPolyData* data, const std::string &out_fil
       pcl::console::print_error (stdout, "[failed]\n");
       return (false);
     }
-    else
-      pcl::console::print_debug ("[success]\n");
+    pcl::console::print_debug ("[success]\n");
   }
 
   return (true);

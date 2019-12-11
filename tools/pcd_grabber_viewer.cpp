@@ -36,9 +36,6 @@
  *
  *
  */
-
-#include <thread>
-
 #include <pcl/io/pcd_grabber.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/print.h>
@@ -46,13 +43,16 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/image_viewer.h>
 
+#include <mutex>
+#include <thread>
+
 using namespace std::chrono_literals;
 using pcl::console::print_error;
 using pcl::console::print_info;
 using pcl::console::print_value;
 
-boost::mutex mutex_;
-boost::shared_ptr<pcl::PCDGrabber<pcl::PointXYZRGBA> > grabber;
+std::mutex mutex_;
+pcl::PCDGrabber<pcl::PointXYZRGBA>::Ptr grabber;
 pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr cloud_;
 
 void
@@ -106,7 +106,7 @@ mouse_callback (const pcl::visualization::MouseEvent& mouse_event, void* cookie)
   std::string* message = static_cast<std::string*> (cookie);
   if (mouse_event.getType() == pcl::visualization::MouseEvent::MouseButtonPress && mouse_event.getButton() == pcl::visualization::MouseEvent::LeftButton)
   {
-    cout << (*message) << " :: " << mouse_event.getX () << " , " << mouse_event.getY () << endl;
+    std::cout << (*message) << " :: " << mouse_event.getX () << " , " << mouse_event.getY () << std::endl;
   }
 }
 
@@ -114,7 +114,7 @@ mouse_callback (const pcl::visualization::MouseEvent& mouse_event, void* cookie)
 int
 main (int argc, char** argv)
 {
-  srand (unsigned (time (0)));
+  srand (unsigned (time (nullptr)));
 
   if (argc > 1)
   {
@@ -179,7 +179,7 @@ main (int argc, char** argv)
   std::string path;
   pcl::console::parse_argument (argc, argv, "-file", path);
   std::cout << "path: " << path << std::endl;
-  if (path != "" && boost::filesystem::exists (path))
+  if (!path.empty() && boost::filesystem::exists (path))
   {
     grabber.reset (new pcl::PCDGrabber<pcl::PointXYZRGBA> (path, frames_per_second, repeat));
   }
@@ -188,7 +188,7 @@ main (int argc, char** argv)
     std::vector<std::string> pcd_files;
     pcl::console::parse_argument (argc, argv, "-dir", path);
     std::cout << "path: " << path << std::endl;
-    if (path != "" && boost::filesystem::exists (path))
+    if (!path.empty() && boost::filesystem::exists (path))
     {
       boost::filesystem::directory_iterator end_itr;
       for (boost::filesystem::directory_iterator itr (path); itr != end_itr; ++itr)
@@ -211,7 +211,10 @@ main (int argc, char** argv)
   }
 
   EventHelper h;
-  boost::function<void(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&) > f = boost::bind (&EventHelper::cloud_cb, &h, _1);
+  std::function<void (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = [&] (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr& cloud)
+  {
+    h.cloud_cb (cloud);
+  };
   boost::signals2::connection c1 = grabber->registerCallback (f);
 
   std::string mouse_msg_3D ("Mouse coordinates in PCL Visualizer");
@@ -242,7 +245,7 @@ main (int argc, char** argv)
       std::this_thread::sleep_for(10ms);
       continue;
     }
-    else if (mutex_.try_lock ())
+    if (mutex_.try_lock ())
     {
       pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr temp_cloud;
       temp_cloud.swap (cloud_);

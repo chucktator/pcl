@@ -54,21 +54,7 @@ namespace pcl
     class OctreeContainerBase
     {
     public:
-      /** \brief Empty constructor. */
-      OctreeContainerBase ()
-      {
-      }
-
-      /** \brief Empty constructor. */
-      OctreeContainerBase (const OctreeContainerBase&)
-      {
-      }
-
-      /** \brief Empty deconstructor. */
-      virtual
-      ~OctreeContainerBase ()
-      {
-      }
+      virtual ~OctreeContainerBase () = default;
 
       /** \brief Equal comparison operator
        */
@@ -90,7 +76,7 @@ namespace pcl
       /** \brief Pure abstract method to get size of container (number of indices)
        * \return number of points/indices stored in leaf node container.
        */
-      virtual size_t
+      virtual std::size_t
       getSize () const
       {
         return 0u;
@@ -132,24 +118,6 @@ namespace pcl
     class OctreeContainerEmpty : public OctreeContainerBase
     {
     public:
-      /** \brief Empty constructor. */
-      OctreeContainerEmpty () :
-          OctreeContainerBase ()
-      {
-      }
-
-      /** \brief Empty constructor. */
-      OctreeContainerEmpty (const OctreeContainerEmpty&) :
-          OctreeContainerBase ()
-      {
-      }
-
-      /** \brief Empty deconstructor. */
-      
-      ~OctreeContainerEmpty ()
-      {
-      }
-
       /** \brief Octree deep copy method */
       virtual OctreeContainerEmpty *
       deepCopy () const
@@ -160,7 +128,7 @@ namespace pcl
       /** \brief Abstract get size of container (number of DataT objects)
        * \return number of DataT elements in leaf node container.
        */
-      size_t
+      std::size_t
       getSize () const override
       {
         return 0;
@@ -207,22 +175,9 @@ namespace pcl
       {
       public:
         /** \brief Empty constructor. */
-        OctreeContainerPointIndex () :
-            OctreeContainerBase (), data_ ()
+        OctreeContainerPointIndex ()
         {
           reset ();
-        }
-
-        /** \brief Empty constructor. */
-        OctreeContainerPointIndex (const OctreeContainerPointIndex& source) :
-            OctreeContainerBase (), data_ (source.data_)
-        {
-        }
-
-        /** \brief Empty deconstructor. */
-        
-        ~OctreeContainerPointIndex ()
-        {
         }
 
         /** \brief Octree deep copy method */
@@ -274,7 +229,7 @@ namespace pcl
         /** \brief Get size of container (number of DataT objects)
          * \return number of DataT elements in leaf node container.
          */
-        size_t
+        std::size_t
         getSize () const override
         {
           return data_<0 ? 0 : 1;
@@ -299,24 +254,6 @@ namespace pcl
       class OctreeContainerPointIndices : public OctreeContainerBase
       {
       public:
-        /** \brief Empty constructor. */
-        OctreeContainerPointIndices () :
-          OctreeContainerBase (), leafDataTVector_ ()
-        {
-        }
-
-        /** \brief Empty constructor. */
-        OctreeContainerPointIndices (const OctreeContainerPointIndices& source) :
-            OctreeContainerBase (), leafDataTVector_ (source.leafDataTVector_)
-        {
-        }
-
-        /** \brief Empty deconstructor. */
-        
-        ~OctreeContainerPointIndices ()
-        {
-        }
-
         /** \brief Octree deep copy method */
         virtual OctreeContainerPointIndices *
         deepCopy () const
@@ -374,7 +311,7 @@ namespace pcl
         /** \brief Get size of container (number of indices)
          * \return number of point indices in container.
          */
-        size_t
+        std::size_t
         getSize () const override
         {
           return leafDataTVector_.size ();

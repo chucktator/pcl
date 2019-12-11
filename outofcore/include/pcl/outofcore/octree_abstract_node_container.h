@@ -38,8 +38,9 @@
 
 #pragma once
 
-#include <vector>
+#include <mutex>
 #include <string>
+#include <vector>
 
 #include <pcl/outofcore/boost.h>
 
@@ -52,7 +53,7 @@ namespace pcl
     {
 
       public:
-        typedef std::vector<PointT, Eigen::aligned_allocator<PointT> > AlignedPointTVector;
+        using AlignedPointTVector = std::vector<PointT, Eigen::aligned_allocator<PointT> >;
 
         OutofcoreAbstractNodeContainer () 
           : container_ ()
@@ -64,21 +65,21 @@ namespace pcl
         ~OutofcoreAbstractNodeContainer () {}        
 
         virtual void
-        insertRange (const PointT* start, const uint64_t count)=0;
+        insertRange (const PointT* start, const std::uint64_t count)=0;
         
         virtual void
-        insertRange (const PointT* const* start, const uint64_t count)=0;
+        insertRange (const PointT* const* start, const std::uint64_t count)=0;
 
         virtual void
-        readRange (const uint64_t start, const uint64_t count, AlignedPointTVector& v)=0;
+        readRange (const std::uint64_t start, const std::uint64_t count, AlignedPointTVector& v)=0;
         
         virtual void
-        readRangeSubSample (const uint64_t start, const uint64_t count, const double percent, AlignedPointTVector& v) =0;
+        readRangeSubSample (const std::uint64_t start, const std::uint64_t count, const double percent, AlignedPointTVector& v) =0;
 
         virtual bool
         empty () const=0;
         
-        virtual uint64_t
+        virtual std::uint64_t
         size () const =0;
         
         virtual void
@@ -88,15 +89,14 @@ namespace pcl
         convertToXYZ (const boost::filesystem::path& path)=0;
 
         virtual PointT
-        operator[] (uint64_t idx) const=0;
+        operator[] (std::uint64_t idx) const=0;
 
       protected:
         OutofcoreAbstractNodeContainer (const OutofcoreAbstractNodeContainer& rval);
 
         AlignedPointTVector container_;
         
-        static boost::mutex rng_mutex_;
-        static boost::mt19937 rand_gen_;
+        static std::mutex rng_mutex_;
     };
   }//namespace outofcore
 }//namespace pcl

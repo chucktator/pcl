@@ -54,15 +54,15 @@ namespace pcl
   class EdgeAwarePlaneComparator: public PlaneCoefficientComparator<PointT, PointNT>
   {
     public:
-      typedef typename Comparator<PointT>::PointCloud PointCloud;
-      typedef typename Comparator<PointT>::PointCloudConstPtr PointCloudConstPtr;
+      using PointCloud = typename Comparator<PointT>::PointCloud;
+      using PointCloudConstPtr = typename Comparator<PointT>::PointCloudConstPtr;
       
-      typedef pcl::PointCloud<PointNT> PointCloudN;
-      typedef typename PointCloudN::Ptr PointCloudNPtr;
-      typedef typename PointCloudN::ConstPtr PointCloudNConstPtr;
+      using PointCloudN = pcl::PointCloud<PointNT>;
+      using PointCloudNPtr = typename PointCloudN::Ptr;
+      using PointCloudNConstPtr = typename PointCloudN::ConstPtr;
       
-      typedef boost::shared_ptr<EdgeAwarePlaneComparator<PointT, PointNT> > Ptr;
-      typedef boost::shared_ptr<const EdgeAwarePlaneComparator<PointT, PointNT> > ConstPtr;
+      using Ptr = boost::shared_ptr<EdgeAwarePlaneComparator<PointT, PointNT> >;
+      using ConstPtr = boost::shared_ptr<const EdgeAwarePlaneComparator<PointT, PointNT> >;
 
       using pcl::PlaneCoefficientComparator<PointT, PointNT>::input_;
       using pcl::PlaneCoefficientComparator<PointT, PointNT>::normals_;
@@ -194,7 +194,7 @@ namespace pcl
         bool dist_ok = (dist < euclidean_dist_threshold);
 
         bool curvature_ok = normals_->points[idx1].curvature < curvature_threshold_;
-        bool plane_d_ok = fabs ((*plane_coeff_d_)[idx1] - (*plane_coeff_d_)[idx2]) < dist_threshold;
+        bool plane_d_ok = std::abs ((*plane_coeff_d_)[idx1] - (*plane_coeff_d_)[idx2]) < dist_threshold;
         
         if (distance_map_[idx1] < distance_map_threshold_)    
           curvature_ok = false;

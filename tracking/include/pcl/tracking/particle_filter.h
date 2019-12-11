@@ -31,27 +31,28 @@ namespace pcl
         using Tracker<PointInT, StateT>::input_;
         using Tracker<PointInT, StateT>::indices_;
         using Tracker<PointInT, StateT>::getClassName;
+
+        using Ptr = boost::shared_ptr<ParticleFilterTracker<PointInT, StateT>>;
+        using ConstPtr = boost::shared_ptr<const ParticleFilterTracker<PointInT, StateT>>;
+
+        using BaseClass = Tracker<PointInT, StateT>;
         
-        typedef boost::shared_ptr<ParticleFilterTracker<PointInT, StateT>> Ptr;
+        using PointCloudIn = typename Tracker<PointInT, StateT>::PointCloudIn;
+        using PointCloudInPtr = typename PointCloudIn::Ptr;
+        using PointCloudInConstPtr = typename PointCloudIn::ConstPtr;
 
-        typedef Tracker<PointInT, StateT> BaseClass;
-        
-        typedef typename Tracker<PointInT, StateT>::PointCloudIn PointCloudIn;
-        typedef typename PointCloudIn::Ptr PointCloudInPtr;
-        typedef typename PointCloudIn::ConstPtr PointCloudInConstPtr;
+        using PointCloudState = typename Tracker<PointInT, StateT>::PointCloudState;
+        using PointCloudStatePtr = typename PointCloudState::Ptr;
+        using PointCloudStateConstPtr = typename PointCloudState::ConstPtr;
 
-        typedef typename Tracker<PointInT, StateT>::PointCloudState PointCloudState;
-        typedef typename PointCloudState::Ptr PointCloudStatePtr;
-        typedef typename PointCloudState::ConstPtr PointCloudStateConstPtr;
+        using Coherence = PointCoherence<PointInT>;
+        using CoherencePtr = typename Coherence::Ptr;
+        using CoherenceConstPtr = typename Coherence::ConstPtr;
 
-        typedef PointCoherence<PointInT> Coherence;
-        typedef boost::shared_ptr< Coherence > CoherencePtr;
-        typedef boost::shared_ptr< const Coherence > CoherenceConstPtr;
+        using CloudCoherence = PointCloudCoherence<PointInT>;
+        using CloudCoherencePtr = typename CloudCoherence::Ptr;
+        using CloudCoherenceConstPtr = typename CloudCoherence::ConstPtr;
 
-        typedef PointCloudCoherence<PointInT> CloudCoherence;
-        typedef boost::shared_ptr< CloudCoherence > CloudCoherencePtr;
-        typedef boost::shared_ptr< const CloudCoherence > CloudCoherenceConstPtr;
-        
         /** \brief Empty constructor. */
         ParticleFilterTracker ()
         : iteration_num_ (1)
@@ -60,14 +61,10 @@ namespace pcl
         , ref_ ()
         , particles_ ()
         , coherence_ ()
-        , step_noise_covariance_ ()
-        , initial_noise_covariance_ ()
-        , initial_noise_mean_ ()
         , resample_likelihood_thr_ (0.0)
         , occlusion_angle_thr_ (M_PI / 2.0)
         , alpha_ (15.0)
         , representative_state_ ()
-        , trans_ ()
         , use_normal_ (false)
         , motion_ ()
         , motion_ratio_ (0.25)
@@ -213,7 +210,7 @@ namespace pcl
         /** \brief Get a pointer to a pointcloud of the particles. */
         inline PointCloudStatePtr getParticles () const { return particles_; }
 
-        /** \brief Normalize the weight of a particle using \f$ exp(1- alpha ( w - w_{min}) / (w_max - w_min)) \f$
+        /** \brief Normalize the weight of a particle using \f$ std::exp(1- alpha ( w - w_{min}) / (w_max - w_min)) \f$
           * \note This method is described in [P.Azad et. al, ICRA11].
           * \param[in] w the weight to be normalized
           * \param[in] w_min the minimum weight of the particles
@@ -221,7 +218,7 @@ namespace pcl
           */
         inline double normalizeParticleWeight (double w, double w_min, double w_max)
         {
-          return exp (1.0 - alpha_ * (w - w_min) / (w_max - w_min));
+          return std::exp (1.0 - alpha_ * (w - w_min) / (w_max - w_min));
         }
 
         /** \brief Set the value of alpha.

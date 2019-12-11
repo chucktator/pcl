@@ -69,7 +69,7 @@ set(impl_incs
 )
 
 set(LIB_NAME "pcl_${SUBSYS_NAME}")
-PCL_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${incs} ${impl_incs})
+PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs})
 target_link_libraries("${LIB_NAME}" pcl_common)
 set_target_properties( "${LIB_NAME}" PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_include_directories(${LIB_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")

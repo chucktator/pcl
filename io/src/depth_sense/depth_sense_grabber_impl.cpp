@@ -48,7 +48,7 @@ pcl::io::depth_sense::DepthSenseGrabberImpl::DepthSenseGrabberImpl (DepthSenseGr
 , color_data_ (COLOR_SIZE * 3)
 , depth_buffer_ (new pcl::io::SingleBuffer<float> (SIZE))
 {
-  if (device_id == "")
+  if (device_id.empty())
     device_id_ = DepthSenseDeviceManager::getInstance ()->captureDevice (this);
   else if (device_id[0] == '#')
     device_id_ = DepthSenseDeviceManager::getInstance ()->captureDevice (this, boost::lexical_cast<int> (device_id.substr (1)) - 1);
@@ -98,7 +98,7 @@ pcl::io::depth_sense::DepthSenseGrabberImpl::stop ()
 float
 pcl::io::depth_sense::DepthSenseGrabberImpl::getFramesPerSecond () const
 {
-  boost::mutex::scoped_lock lock (fps_mutex_);
+  std::lock_guard<std::mutex> lock (fps_mutex_);
   return (frequency_.getFrequency ());
 }
 
@@ -110,7 +110,7 @@ pcl::io::depth_sense::DepthSenseGrabberImpl::setConfidenceThreshold (int thresho
 }
 
 void
-pcl::io::depth_sense::DepthSenseGrabberImpl::enableTemporalFiltering (DepthSenseGrabber::TemporalFilteringType type, size_t window_size)
+pcl::io::depth_sense::DepthSenseGrabberImpl::enableTemporalFiltering (DepthSenseGrabber::TemporalFilteringType type, std::size_t window_size)
 {
   if (temporal_filtering_type_ != type ||
       (type != DepthSenseGrabber::DepthSense_None && depth_buffer_->size () != window_size))

@@ -5,7 +5,7 @@ set(SUBSYS_DEPS common octree)
 set(build TRUE)
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
 if(WIN32)
-  PCL_SUBSYS_DEPEND(build "${SUBSYS_NAME}" DEPS ${SUBSYS_DEPS} OPT_DEPS openni openni2 ensenso davidSDK dssdk rssdk pcap png vtk)
+  PCL_SUBSYS_DEPEND(build "${SUBSYS_NAME}" DEPS ${SUBSYS_DEPS} OPT_DEPS openni openni2 ensenso davidSDK dssdk rssdk rssdk2 pcap png vtk)
 else()
   PCL_SUBSYS_DEPEND(build "${SUBSYS_NAME}" DEPS ${SUBSYS_DEPS} OPT_DEPS openni openni2 ensenso davidSDK dssdk pcap png vtk libusb-1.0)
 endif()
@@ -160,6 +160,16 @@ if(WITH_RSSDK)
   )
 endif()
 
+# RSSDK2 is restricted to Windows until it is functional under other OSs
+if(WIN32 AND WITH_RSSDK2)
+  set(RSSDK2_GRABBER_INCLUDES
+      include/pcl/io/real_sense_2_grabber.h
+  )
+  set(RSSDK2_GRABBER_SOURCES
+      src/real_sense_2_grabber.cpp
+  )
+endif()
+
 if(LIBUSB_1_FOUND)
   set(DINAST_GRABBER_INCLUDES
     include/pcl/io/dinast_grabber.h
@@ -170,8 +180,6 @@ if(LIBUSB_1_FOUND)
 endif()
 
 if(VTK_FOUND AND NOT ANDROID)
-  set(VTK_USE_FILE "${VTK_USE_FILE}" CACHE INTERNAL "VTK_USE_FILE")
-  include("${VTK_USE_FILE}")
   set(VTK_IO_INCLUDES
     "include/pcl/${SUBSYS_NAME}/vtk_lib_io.h"
     "include/pcl/${SUBSYS_NAME}/png_io.h"
@@ -196,7 +204,7 @@ set(PLY_INCLUDES
   "include/pcl/${SUBSYS_NAME}/ply/ply_parser.h"
 )
 
-PCL_ADD_LIBRARY(pcl_io_ply "${SUBSYS_NAME}" ${PLY_SOURCES} ${PLY_INCLUDES})
+PCL_ADD_LIBRARY(pcl_io_ply COMPONENT ${SUBSYS_NAME} SOURCES ${PLY_SOURCES} ${PLY_INCLUDES})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/ply" ${PLY_INCLUDES})
 target_include_directories(pcl_io_ply PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
@@ -228,6 +236,7 @@ set(srcs
   ${DAVIDSDK_GRABBER_SOURCES}
   ${DSSDK_GRABBER_SOURCES}
   ${RSSDK_GRABBER_SOURCES}
+  ${RSSDK2_GRABBER_SOURCES}
 )
 
 if(PNG_FOUND)
@@ -278,6 +287,7 @@ set(incs
   ${DAVIDSDK_GRABBER_INCLUDES}
   ${DSSDK_GRABBER_INCLUDES}
   ${RSSDK_GRABBER_INCLUDES}
+  ${RSSDK2_GRABBER_INCLUDES}
   "include/pcl/${SUBSYS_NAME}/pxc_grabber.h"  # contains only depreciation note
 )
 
@@ -322,7 +332,7 @@ endif()
 set(LIB_NAME "pcl_${SUBSYS_NAME}")
 
 add_definitions(${VTK_DEFINES})
-PCL_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${incs} ${compression_incs} ${impl_incs} ${OPENNI_INCLUDES} ${OPENNI2_INCLUDES})
+PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${compression_incs} ${impl_incs} ${OPENNI_INCLUDES} ${OPENNI2_INCLUDES})
 target_include_directories(${LIB_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 link_directories(${VTK_LINK_DIRECTORIES})
 target_link_libraries("${LIB_NAME}" pcl_common pcl_io_ply ${VTK_LIBRARIES})
@@ -363,6 +373,11 @@ endif()
 
 if(WITH_RSSDK)
   target_link_libraries(${LIB_NAME} ${RSSDK_LIBRARIES})
+endif()
+
+# RSSDK2 is restricted to Windows until it is functional under other OSs
+if(WIN32 AND WITH_RSSDK2)
+  target_link_libraries(${LIB_NAME} ${RSSDK2_LIBRARIES})
 endif()
 
 if(PCAP_FOUND)

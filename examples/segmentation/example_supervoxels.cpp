@@ -18,14 +18,14 @@
 using namespace std::chrono_literals;
 
 // Types
-typedef pcl::PointXYZRGBA PointT;
-typedef pcl::PointCloud<PointT> PointCloudT;
-typedef pcl::PointNormal PointNT;
-typedef pcl::PointCloud<PointNT> PointNCloudT;
-typedef pcl::PointXYZL PointLT;
-typedef pcl::PointCloud<PointLT> PointLCloudT;
-typedef pcl::Normal NormalT;
-typedef pcl::PointCloud<NormalT> NormalCloudT;
+using PointT = pcl::PointXYZRGBA;
+using PointCloudT = pcl::PointCloud<PointT>;
+using PointNT = pcl::PointNormal;
+using PointNCloudT = pcl::PointCloud<PointNT>;
+using PointLT = pcl::PointXYZL;
+using PointLCloudT = pcl::PointCloud<PointLT>;
+using NormalT = pcl::Normal;
+using NormalCloudT = pcl::PointCloud<NormalT>;
 
 bool show_voxel_centroids = true;
 bool show_supervoxels = true;
@@ -116,10 +116,8 @@ main (int argc, char ** argv)
     {
       std::cout << "No cloud specified!\n";
       return (1);
-    }else
-    {
-      pcl::console::parse (argc,argv,"-p",pcd_path);
     }
+    pcl::console::parse (argc,argv,"-p",pcd_path);
   }
   
   bool disable_transform = pcl::console::find_switch (argc, argv, "--NT");
@@ -216,12 +214,12 @@ main (int argc, char ** argv)
     depth_pixel = static_cast<unsigned short*>(depth_image->GetScalarPointer (depth_dims[0]-1,depth_dims[1]-1,0));
     color_pixel = static_cast<unsigned char*> (rgb_image->GetScalarPointer (depth_dims[0]-1,depth_dims[1]-1,0));
     
-    for (size_t y=0; y<cloud->height; ++y)
+    for (std::size_t y=0; y<cloud->height; ++y)
     {
-      for (size_t x=0; x<cloud->width; ++x, --depth_pixel, color_pixel-=3)
+      for (std::size_t x=0; x<cloud->width; ++x, --depth_pixel, color_pixel-=3)
       {
         PointT new_point;
-        //  uint8_t* p_i = &(cloud_blob->data[y * cloud_blob->row_step + x * cloud_blob->point_step]);
+        //  std::uint8_t* p_i = &(cloud_blob->data[y * cloud_blob->row_step + x * cloud_blob->point_step]);
         float depth = static_cast<float>(*depth_pixel) * scale;
         if (depth == 0.0f)
         {
@@ -271,7 +269,7 @@ main (int argc, char ** argv)
   //////////////////////////////  //////////////////////////////
   
   // If the cloud is organized and we haven't disabled the transform we need to
-  // check that there are no negative z values, since we use log(z)
+  // check that there are no negative z values, since we use std::log(z)
   if (cloud->isOrganized () && !disable_transform)
   {
     for (const auto &point : *cloud)
@@ -296,7 +294,7 @@ main (int argc, char ** argv)
   super.setColorImportance (color_importance);
   super.setSpatialImportance (spatial_importance);
   super.setNormalImportance (normal_importance);
-  std::map <uint32_t, pcl::Supervoxel<PointT>::Ptr > supervoxel_clusters;
+  std::map <std::uint32_t, pcl::Supervoxel<PointT>::Ptr > supervoxel_clusters;
  
   std::cout << "Extracting supervoxels!\n";
   super.extract (supervoxel_clusters);
@@ -307,10 +305,10 @@ main (int argc, char ** argv)
   PointLCloudT::Ptr full_labeled_cloud = super.getLabeledCloud ();
   
   std::cout << "Getting supervoxel adjacency\n";
-  std::multimap<uint32_t, uint32_t> label_adjacency;
+  std::multimap<std::uint32_t, std::uint32_t> label_adjacency;
   super.getSupervoxelAdjacency (label_adjacency);
    
-  std::map <uint32_t, pcl::Supervoxel<PointT>::Ptr > refined_supervoxel_clusters;
+  std::map <std::uint32_t, pcl::Supervoxel<PointT>::Ptr > refined_supervoxel_clusters;
   std::cout << "Refining supervoxels \n";
   super.refineSupervoxels (3, refined_supervoxel_clusters);
 
@@ -335,7 +333,7 @@ main (int argc, char ** argv)
   }
   
   std::cout << "Constructing Boost Graph Library Adjacency List...\n";
-  typedef boost::adjacency_list<boost::setS, boost::setS, boost::undirectedS, uint32_t, float> VoxelAdjacencyList;
+  using VoxelAdjacencyList = boost::adjacency_list<boost::setS, boost::setS, boost::undirectedS, std::uint32_t, float>;
   VoxelAdjacencyList supervoxel_adjacency_list;
   super.getSupervoxelAdjacencyList (supervoxel_adjacency_list);
 
@@ -343,7 +341,7 @@ main (int argc, char ** argv)
   std::cout << "Loading visualization...\n";
   pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
   viewer->setBackgroundColor (0, 0, 0);
-  viewer->registerKeyboardCallback(keyboard_callback, 0);
+  viewer->registerKeyboardCallback(keyboard_callback, nullptr);
 
  
   bool refined_normal_shown = show_refined;
@@ -434,7 +432,7 @@ main (int argc, char ** argv)
       for (auto label_itr = label_adjacency.begin (); label_itr != label_adjacency.end (); )
       {
         //First get the label 
-        uint32_t supervoxel_label = label_itr->first;
+        std::uint32_t supervoxel_label = label_itr->first;
          //Now get the supervoxel corresponding to the label
         pcl::Supervoxel<PointT>::Ptr supervoxel = supervoxel_clusters.at (supervoxel_label);
         //Now we need to iterate through the adjacent supervoxels and make a point cloud of them
